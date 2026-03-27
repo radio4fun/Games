@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Processamento e Fluoroscopia - FATESA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .slider-custom {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: #1e293b;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        .slider-custom::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #0ea5e9;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
+        }
+
+        .tab-btn.active {
+            background: #0ea5e9;
+            color: white;
+            box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
+        }
+
+        #histogram-canvas {
+            border-bottom: 2px solid #334155;
+        }
+
+        .monitor-frame {
+            border: 12px solid #1e293b;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+            background: black;
+        }
+
+        .pixelated {
+            image-rendering: pixelated;
+        }
+
+        @keyframes pulse-heart {
+            0% {
+                transform: scale(1);
+                opacity: 0.8;
+            }
+
+            50% {
+                transform: scale(1.1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 0.8;
+            }
+        }
+
+        .heart-dyn {
+            animation: pulse-heart 0.8s infinite ease-in-out;
+        }
+
+        /* Novas Estilos para Intensificador */
+        .tube-visual {
+            background: #0f172a;
+            border-radius: 16px;
+            padding: 20px;
+            position: relative;
+            border: 1px solid #1e293b;
+        }
+
+        .ii-diagram {
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            padding: 0 10px;
+        }
+
+        .ii-input {
+            width: 8px;
+            background: #0ea5e9;
+            border-radius: 4px;
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.5);
+            transition: height 0.5s ease;
+        }
+
+        .ii-output {
+            width: 8px;
+            height: 15px;
+            background: #10b981;
+            border-radius: 2px;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+        }
+
+        .ii-beam {
+            position: absolute;
+            left: 18px;
+            right: 18px;
+            height: 100%;
+            background: linear-gradient(to right, rgba(14, 165, 233, 0.15), rgba(16, 185, 129, 0.15));
+            pointer-events: none;
+            clip-path: polygon(0% var(--beam-top), 100% 45%, 100% 55%, 0% var(--beam-bottom));
+            transition: clip-path 0.5s ease;
+        }
+
+        .stat-card {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 8px;
+            border-radius: 8px;
+        }
+
+        .pulsed-animation {
+            animation: pulsed-flicker 0.1s infinite step-end;
+        }
+
+        @keyframes pulsed-flicker {
+            0% {
+                opacity: 0.9;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.9;
+            }
+        }
+    </style>
+</head>
+
+<body class="p-4 md:p-8">
+
+    <header class="max-w-7xl mx-auto flex justify-between items-center mb-8 border-b border-slate-800 pb-6">
+        <div>
+            <h1 class="text-3xl font-black text-sky-500 tracking-tighter italic uppercase">Simulador <span
+                    class="text-white">Radiologia</span></h1>
+            <div class="flex gap-4 mt-2">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500"><i
+                        class="fa-solid fa-microchip mr-1"></i> Aula 2: Processamento Digital</span>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500"><i
+                        class="fa-solid fa-video mr-1"></i> Aula 3: Fluoroscopia</span>
+            </div>
+        </div>
+        <div class="text-right">
+            <p class="text-[10px] text-slate-500 uppercase font-black">Estação de Trabalho</p>
+            <p class="text-xs font-mono text-sky-400">STATUS: ONLINE</p>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+        <!-- CONTROLES ESQUERDA -->
+        <div class="lg:col-span-3 space-y-6">
+
+            <!-- ABAS DE MÓDULO -->
+            <div class="flex gap-2 p-1 bg-slate-900 rounded-xl">
+                <button onclick="switchTab('digital')" id="tab-digital"
+                    class="tab-btn active flex-1 py-3 text-[10px] font-bold uppercase rounded-lg transition-all">Imagem
+                    Digital</button>
+                <button onclick="switchTab('fluoro')" id="tab-fluoro"
+                    class="tab-btn flex-1 py-3 text-[10px] font-bold uppercase rounded-lg transition-all">Fluoroscopia</button>
+            </div>
+
+            <!-- PAINEL DIGITAL -->
+            <div id="panel-digital" class="glass-panel p-6 rounded-2xl space-y-6">
+                <h2 class="text-xs font-bold uppercase tracking-widest text-sky-400 mb-4">Ajustes da Imagem</h2>
+
+                <div>
+                    <div class="flex justify-between mb-2">
+                        <label class="text-[10px] font-bold uppercase text-slate-400">Brilho (Brightness)</label>
+                        <span id="val-brilho" class="text-[10px] font-mono text-sky-400">0</span>
+                    </div>
+                    <input type="range" id="input-brilho" min="0" max="255" value="0" class="slider-custom"
+                        oninput="updateFilters()">
+                </div>
+
+                <div>
+                    <div class="flex justify-between mb-2">
+                        <label class="text-[10px] font-bold uppercase text-slate-400">Contraste (Contrast)</label>
+                        <span id="val-contraste" class="text-[10px] font-mono text-sky-400">0</span>
+                    </div>
+                    <input type="range" id="input-contraste" min="0" max="255" value="0" class="slider-custom"
+                        oninput="updateFilters()">
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-bold uppercase text-slate-400 mb-3 block">Resolução (Matriz)</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="setResolution(512)"
+                            class="res-btn bg-slate-800 border-2 border-sky-500 text-[10px] font-bold py-2 rounded">1024</button>
+                        <button onclick="setResolution(128)"
+                            class="res-btn bg-slate-800 border border-slate-700 text-[10px] font-bold py-2 rounded">512</button>
+                        <button onclick="setResolution(32)"
+                            class="res-btn bg-slate-800 border border-slate-700 text-[10px] font-bold py-2 rounded">128</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAINEL FLUOROSCOPIA -->
+            <div id="panel-fluoro" class="glass-panel p-6 space-y-6 hidden">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-xs font-bold uppercase tracking-widest text-emerald-400">Parâmetros Técnicos</h2>
+                    <span
+                        class="text-[9px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20">Aula
+                        3</span>
+                </div>
+
+                <!-- SELETOR DE FOV (Campo de Visão) -->
+                <div>
+                    <label class="text-[10px] font-bold uppercase text-slate-400 mb-2 block">Campo de Visão
+                        (FOV)</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="setFOV(23)" id="fov-23"
+                            class="fov-btn bg-emerald-600 text-white text-[10px] font-bold py-2 rounded-lg border-2 border-emerald-400 transition-all">23
+                            cm</button>
+                        <button onclick="setFOV(17)" id="fov-17"
+                            class="fov-btn bg-slate-800 text-slate-400 text-[10px] font-bold py-2 rounded-lg border border-slate-700 transition-all">17
+                            cm</button>
+                        <button onclick="setFOV(13)" id="fov-13"
+                            class="fov-btn bg-slate-800 text-slate-400 text-[10px] font-bold py-2 rounded-lg border border-slate-700 transition-all">13
+                            cm</button>
+                    </div>
+                </div>
+
+                <!-- DIAGRAMA DO INTENSIFICADOR -->
+                <div class="tube-visual">
+                    <div class="flex justify-between text-[9px] uppercase font-bold text-slate-500 mb-4">
+                        <span>Fósforo Entrada</span>
+                        <span>Fósforo Saída</span>
+                    </div>
+                    <div class="ii-diagram" id="ii-diagram" style="--beam-top: 10%; --beam-bottom: 90%;">
+                        <div class="ii-input" id="ii-input-viz" style="height: 80%;"></div>
+                        <div class="ii-beam"></div>
+                        <div class="ii-output"></div>
+                    </div>
+                    <div class="mt-4 grid grid-cols-2 gap-2">
+                        <div class="stat-card">
+                            <span class="block text-[8px] text-slate-500 uppercase">G. Minificação</span>
+                            <span id="val-g-min" class="text-xs font-mono text-emerald-400">84.6</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="block text-[8px] text-slate-500 uppercase">G. Brilho Tot</span>
+                            <span id="val-g-total" class="text-xs font-mono text-white">6.345</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-bold uppercase text-slate-400">Modo de Operação</span>
+                        <span id="label-mag" class="text-[9px] font-bold text-yellow-500 uppercase">Modo Normal</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="setFluoroMode('cont')" id="mode-cont"
+                            class="flex-1 py-2.5 bg-emerald-600 text-white text-[10px] font-bold uppercase rounded-xl border-2 border-emerald-400">Contínuo</button>
+                        <button onclick="setFluoroMode('puls')" id="mode-puls"
+                            class="flex-1 py-2.5 bg-slate-800 text-slate-400 text-[10px] font-bold uppercase rounded-xl border border-slate-700">Pulsado</button>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-slate-800">
+                    <div class="flex justify-between text-[10px] font-bold uppercase text-slate-500 mb-2">
+                        <span>Fator de Dose (M²)</span>
+                        <span id="val-dose-factor" class="text-emerald-400">1.0x</span>
+                    </div>
+                    <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                        <div id="dose-factor-bar" class="h-full bg-yellow-500 transition-all w-[20%]"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HISTOGRAMA (Aula 2) -->
+            <div id="panel-histogram" class="glass-panel p-6 rounded-2xl">
+                <h2 class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4">Histograma Dinâmico</h2>
+                <div class="h-32 w-full bg-slate-900/50 rounded-lg overflow-hidden flex items-end">
+                    <canvas id="histogram-canvas" width="256" height="100" class="w-full h-full"></canvas>
+                </div>
+                <p class="text-[9px] text-slate-500 mt-2 uppercase text-center italic">Escala de Cinzas (0-255)</p>
+            </div>
+        </div>
+
+        <!-- AREA CENTRAL - MONITOR -->
+        <div class="lg:col-span-6 flex flex-col items-center">
+            <div class="monitor-frame aspect-square w-full relative overflow-hidden rounded-lg group">
+                <!-- Imagem Base (X-Ray Real) -->
+                <img id="main-xray" src="https://images.unsplash.com/photo-1530026405186-ed1f139313f8?q=80&w=1024"
+                    class="absolute inset-0 w-full h-full object-cover grayscale transition-transform duration-500"
+                    alt="Chest X-Ray">
+
+                <!-- Canvas para processamento (Canvas de Histograma) -->
+                <canvas id="image-canvas" width="512" height="512" class="hidden"></canvas>
+                <div class="absolute top-4 left-4 font-mono text-[10px] text-sky-400 space-y-1">
+                    <p id="label-id">ID: FATESA_SIM_2026</p>
+                    <p id="label-res">RES: 1024 x 1024</p>
+                    <p id="label-dose" class="hidden text-emerald-400">DOSE: 0.0 mGy</p>
+                </div>
+
+                <!-- Simulação de Fluoroscopia (Anatomia em movimento) -->
+                <div id="fluoro-overlay"
+                    class="absolute inset-0 pointer-events-none flex items-center justify-center hidden">
+                    <!-- Heart/Chest Dynamic -->
+                    <div
+                        class="heart-dyn w-40 h-40 rounded-full bg-white/5 border-2 border-white/10 flex items-center justify-center">
+                        <div class="w-20 h-20 rounded-full border border-sky-500 blur-md opacity-20"></div>
+                    </div>
+                </div>
+
+                <div class="absolute bottom-4 right-4 flex gap-2">
+                    <span
+                        class="px-2 py-0.5 bg-sky-900/80 text-sky-400 text-[8px] font-bold border border-sky-500/30 rounded uppercase">Zoom
+                        1.0x</span>
+                    <span
+                        class="px-2 py-0.5 bg-slate-900/80 text-slate-400 text-[8px] font-bold border border-slate-700 rounded uppercase leading-tight">LUT:
+                        Standard</span>
+                </div>
+            </div>
+
+            <div class="w-full grid grid-cols-2 gap-4 mt-6">
+                <div class="glass-panel p-4 rounded-xl border-l-4 border-sky-500">
+                    <h3 class="text-[9px] font-bold text-slate-500 uppercase">Qualidade de Imagem</h3>
+                    <p id="info-quality" class="text-sm font-semibold text-white mt-1 uppercase">Excelente</p>
+                </div>
+                <div class="glass-panel p-4 rounded-xl border-l-4 border-emerald-500">
+                    <h3 class="text-[9px] font-bold text-slate-500 uppercase">Risco Biológico</h3>
+                    <p id="info-risk" class="text-sm font-semibold text-white mt-1 uppercase">Mínimo</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- BARRA DIREITA - EXPLICAÇÕES (Aula 3) -->
+        <div class="lg:col-span-3 space-y-6">
+            <div class="glass-panel p-6 rounded-2xl h-full flex flex-col">
+                <h2 class="text-xs font-bold uppercase tracking-widest text-white mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-graduation-cap text-sky-400"></i> Notas de Aula
+                </h2>
+
+                <div id="notes-content" class="text-slate-400 text-xs leading-relaxed flex-grow">
+                    <div id="note-digital" class="space-y-4">
+                        <p><strong class="text-sky-400 italic">Aula 2:</strong> O **Histograma** mostra a quantidade de
+                            pixels em cada tom. Imagens escuras (baixo brilho) concentram o gráfico à esquerda.</p>
+                        <p>O **Contraste** aumenta a distância entre claros e escuros, "esticando" o histograma.</p>
+                        <hr class="border-slate-800">
+                        <p><strong class="text-white uppercase">Dica:</strong> Reduzir a matriz (ex: 128) causa o
+                            fenômeno de _pixelização_, reduzindo a resolução espacial.</p>
+                    </div>
+
+                    <div id="note-fluoro" class="space-y-4 hidden">
+                        <p><strong class="text-emerald-400 italic">Aula 3:</strong> O Intensificador de Imagem aumenta o
+                            brilho através do <strong>Ganho de Fluxo</strong> e <strong>Ganho de Minificação</strong>.
+                        </p>
+
+
+                        <p>
+                            A razão do número de fótons de luz no fósforo de saída pelo número de fótons de RX no
+                            fósforo de entrada é o <strong>Ganho de Fluxo (GF)</strong>.
+                        </p>
+                        <p style="font-size: 12px;"
+                            class="bg-slate-900/50 p-2 rounded border border-slate-800 font-mono text-[9px] text-emerald-300">
+                            GF = (Numero de fotons saida / Numero de fotons entrada)
+                        </p>
+
+                        <p>
+                            O <strong>Ganho de Minificação (GM) </strong> é a razão do quadrado do diâmetro do fósforo
+                            de
+                            entrada pelo quadrado do diâmetro do fósforo de saída.
+                        </p>
+                        <p style="font-size: 12px;"
+                            class="bg-slate-900/50 p-2 rounded border border-slate-800 font-mono text-[9px] text-emerald-300">
+                            GM = (diâmetro entrada)² / (diâmetro saida)²
+                        </p>
+
+                        <p>
+                            A habilidade de intensificar a imagem para incrementar o nível de iluminação é chamada de
+                            <strong>Ganho de Brilho (GB)</strong>.
+                        </p>
+
+                        <p style="font-size: 12px;"
+                            class="bg-slate-900/50 p-2 rounded border border-slate-800 font-mono text-[9px] text-emerald-300">
+                            GB = GM × GF
+                        </p>
+
+
+                        <hr class="border-slate-800">
+                        <p>Ao selecionar campos menores (Magnificação), a dose aumenta proporcionalmente ao quadrado
+                            da redução (M²), pois o ganho de minificação é menor.</p>
+                        <p><i class="fa-solid fa-circle-exclamation text-yellow-500"></i> Observe como a imagem "Zoom"
+                            no monitor e a dose sobe no modo 13cm!</p>
+
+                        <p>
+                            O Fator de conversão (CF) [cd.s/mR.m²] é uma medida do ganho de um Intensificador de
+                            imagem. Dado pela
+                            seguinte formula:
+                        </p>
+                        <p style="font-size: 12px;"
+                            class="bg-slate-900/50 p-2 rounded border border-slate-800 font-mono text-[9px] text-emerald-300">
+                            CF = (Luminancia de saida) / (Taxa de Exposição de entrada)
+                        </p>
+
+                        <p>
+                            A relação entre o diametro sem zoom e o diametro com zoom é chamada de <strong>F ator de
+                                magnificação (MF)</strong>. A Magnificação melhora a resolução espacial, e a resolução
+                            de
+                            contraste,
+                            mas aumenta a dose.
+                        </p>
+                        <p style="font-size: 12px;"
+                            class="bg-slate-900/50 p-2 rounded border border-slate-800 font-mono text-[9px] text-emerald-300">
+                            MF = (diâmetro sem zoom) / (diâmetro com zoom)
+                        </p>
+
+                        <p>
+                            O <strong>Fator de Exposição (EF)</strong> é proporcional a razão entre as áreas dos campos
+                            de visão (FOV)
+                            sem zoom e com zoom.
+                        </p>
+                        <p style="font-size: 12px;"
+                            class="bg-slate-900/50 p-2 rounded border border-slate-800 font-mono text-[9px] text-emerald-300">
+                            EF = (diametro sem zoom)² / (diametro com zoom)²
+                        </p>
+
+
+
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-slate-800 flex flex-col items-center">
+                    <div class="italic uppercase font-black text-2xl tracking-tighter text-sky-500 mb-1">FATESA</div>
+                    <span class="text-[8px] text-slate-500 tracking-[0.3em] uppercase mb-4">Tecnologia em
+                        Radiologia</span>
+                    <p class="text-[10px] text-slate-500 max-w-[200px]">
+                        Desenvolvido com <i class="fa-solid fa-heart text-red-500 heart-dyn mx-1"></i> por alunos e
+                        professora <span class="text-slate-400 font-bold">Raquel Pantojo de
+                            Souza Bachour</span> na disciplina de <span class="text-slate-400 font-bold">Física
+                            Radiológica III</span>.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const xrayImg = document.getElementById('main-xray');
+        const canvas = document.getElementById('image-canvas');
+        const ctx = canvas.getContext('2d');
+        const histCanvas = document.getElementById('histogram-canvas');
+        const histCtx = histCanvas.getContext('2d');
+
+        let currentRes = 512;
+        let dose = 0;
+        let fluoroInterval = null;
+        let isFluoro = false;
+        let fluoroMode = 'cont';
+
+        // Inicializar com imagem real
+        xrayImg.onload = () => {
+            ctx.drawImage(xrayImg, 0, 0, 512, 512);
+            updateFilters();
+        };
+
+        function updateFilters() {
+            const b = document.getElementById('input-brilho').value;
+            const c = document.getElementById('input-contraste').value;
+
+            document.getElementById('val-brilho').innerText = b;
+            document.getElementById('val-contraste').innerText = c;
+
+            // Filtros Pro de Windowing (WW/WL)
+            // No CSS: 1.0 (Normal), b aumenta brilho, c aumenta contraste
+            const contrastVal = 100 + parseInt(c);
+            const brightnessVal = 100 + parseInt(b);
+
+            xrayImg.style.filter = `grayscale(1) brightness(${brightnessVal}%) contrast(${contrastVal}%) blur(${currentRes < 128 ? (128 - currentRes) / 10 : 0}px)`;
+
+            // Simular Histograma Dinâmico
+            refreshHistogram(parseInt(b), parseInt(c));
+            updateQualityIndicators(b, c);
+        }
+
+        function refreshHistogram(b, c) {
+            histCtx.clearRect(0, 0, 256, 100);
+            histCtx.fillStyle = "#0ea5e9";
+
+            // Simulação de Gaussiana baseado em Windowing
+            const mean = 127 + (b * 0.8);
+            const spread = 40 + (c / 3);
+
+            for (let i = 0; i < 256; i++) {
+                const dist = Math.abs(i - mean);
+                const h = Math.max(1, 70 * Math.exp(-(dist * dist) / (2 * spread * spread)));
+                histCtx.fillRect(i, 100 - h, 1, h);
+            }
+        }
+
+        function updateQualityIndicators(b, c) {
+            const qualityEl = document.getElementById('info-quality');
+            if (Math.abs(b) > 60 || Math.abs(c) > 60) {
+                qualityEl.innerText = "Saturada / Ruim";
+                qualityEl.className = "text-sm font-semibold text-red-500 mt-1 uppercase";
+            } else if (Math.abs(b) > 30 || Math.abs(c) > 30) {
+                qualityEl.innerText = "Aceitável";
+                qualityEl.className = "text-sm font-semibold text-yellow-500 mt-1 uppercase";
+            } else {
+                qualityEl.innerText = "Excelente";
+                qualityEl.className = "text-sm font-semibold text-emerald-500 mt-1 uppercase";
+            }
+        }
+
+        function setResolution(res) {
+            currentRes = res;
+            document.getElementById('label-res').innerText = `RES: ${res * 2} x ${res * 2}`;
+
+            // Update Buttons
+            document.querySelectorAll('.res-btn').forEach(btn => {
+                if (btn.innerText.includes(res * 2)) {
+                    btn.classList.add('border-sky-500');
+                    btn.classList.remove('border-slate-700');
+                } else {
+                    btn.classList.remove('border-sky-500');
+                    btn.classList.add('border-slate-700');
+                }
+            });
+
+            updateFilters();
+        }
+
+        function switchTab(mode) {
+            isFluoro = (mode === 'fluoro');
+
+            document.getElementById('tab-digital').className = `tab-btn flex-1 py-3 text-[10px] font-bold uppercase rounded-lg transition-all ${!isFluoro ? 'active' : ''}`;
+            document.getElementById('tab-fluoro').className = `tab-btn flex-1 py-3 text-[10px] font-bold uppercase rounded-lg transition-all ${isFluoro ? 'active' : ''}`;
+
+            document.getElementById('panel-digital').classList.toggle('hidden', isFluoro);
+            document.getElementById('panel-fluoro').classList.toggle('hidden', !isFluoro);
+            document.getElementById('panel-histogram').classList.toggle('hidden', isFluoro);
+            document.getElementById('note-digital').classList.toggle('hidden', isFluoro);
+            document.getElementById('note-fluoro').classList.toggle('hidden', !isFluoro);
+
+            document.getElementById('fluoro-overlay').classList.toggle('hidden', !isFluoro);
+            document.getElementById('label-dose').classList.toggle('hidden', !isFluoro);
+
+            if (isFluoro) {
+                startFluoro();
+            } else {
+                stopFluoro();
+            }
+        }
+
+        function setFluoroMode(mode) {
+            fluoroMode = mode;
+            document.getElementById('mode-cont').className = `flex-1 py-2.5 ${mode === 'cont' ? 'bg-emerald-600 border-emerald-400' : 'bg-slate-800 border-slate-700'} text-white text-[10px] font-bold uppercase rounded-xl border-2`;
+            document.getElementById('mode-puls').className = `flex-1 py-2.5 ${mode === 'puls' ? 'bg-emerald-600 border-emerald-400' : 'bg-slate-800 border-slate-700'} text-white text-[10px] font-bold uppercase rounded-xl border-2`;
+
+            if (isFluoro) startFluoro();
+        }
+
+        function startFluoro() {
+            stopFluoro();
+            const interval = fluoroMode === 'cont' ? 100 : 200;
+            const doseInc = (fluoroMode === 'cont' ? 1.0 : 0.4) * currentDoseFactor;
+
+            fluoroInterval = setInterval(() => {
+                dose += doseInc;
+                document.getElementById('label-dose').innerText = `DOSE: ${dose.toFixed(1)} mGy`;
+
+                // Visual Flicker
+                canvas.style.opacity = 0.95 + (Math.random() * 0.05);
+
+                // Dose Risk Update
+                updateRisk();
+            }, interval);
+
+            if (fluoroMode === 'puls') {
+                document.getElementById('fluoro-overlay').classList.add('pulsed-animation');
+            } else {
+                document.getElementById('fluoro-overlay').classList.remove('pulsed-animation');
+            }
+            updateRisk(); // Chamada imediata ao mudar modo
+        }
+
+        function updateRisk() {
+            const riskEl = document.getElementById('info-risk');
+
+            // Novos limites sensíveis para aula (mais rápidos)
+            if (dose > 80) {
+                riskEl.innerText = "CRÍTICO";
+                riskEl.className = "text-sm font-semibold text-red-600 mt-1 uppercase";
+            } else if (dose > 30 || currentDoseFactor >= 3.1) {
+                riskEl.innerText = "ALTO (MAG 2)";
+                riskEl.className = "text-sm font-semibold text-red-500 mt-1 uppercase";
+            } else if (dose > 10 || currentDoseFactor > 1.0) {
+                riskEl.innerText = "MODERADO";
+                riskEl.className = "text-sm font-semibold text-yellow-500 mt-1 uppercase";
+            } else {
+                riskEl.innerText = "MÍNIMO";
+                riskEl.className = "text-sm font-semibold text-emerald-500 mt-1 uppercase";
+            }
+        }
+
+        function initImage() {
+            setFOV(23); // Inicializa com FOV padrão (Aula 3)
+            updateFilters();
+        }
+
+        function stopFluoro() {
+            if (fluoroInterval) clearInterval(fluoroInterval);
+            updateFOVUI();
+            xrayImg.style.opacity = 1;
+        }
+
+        // --- NOVAS FUNÇÕES TÉCNICAS (AULA 3) ---
+        let currentFOV = 23;
+        let currentDoseFactor = 1.0;
+
+        function setFOV(size) {
+            currentFOV = size;
+            const minificationGain = Math.pow(size / 2.5, 2);
+            const fluxGain = 75; // Valor médio acadêmico
+            const totalBrightnessGain = minificationGain * fluxGain;
+            const magnification = 23 / size;
+            currentDoseFactor = Math.pow(magnification, 2);
+
+            // Atualizar UI Técnica
+            document.getElementById('val-g-min').innerText = minificationGain.toFixed(1);
+            document.getElementById('val-g-total').innerText = Math.round(totalBrightnessGain).toLocaleString('pt-BR');
+            document.getElementById('val-dose-factor').innerText = currentDoseFactor.toFixed(1) + "x";
+
+            const doseBarPercent = Math.min(100, (currentDoseFactor / 3.1) * 100);
+            document.getElementById('dose-factor-bar').style.width = doseBarPercent + "%";
+            document.getElementById('label-mag').innerText = size === 23 ? "Modo Normal" : `Modo Magnificação (x${magnification.toFixed(1)})`;
+            document.getElementById('label-mag').className = size === 23 ? "text-[9px] font-bold text-emerald-500 uppercase" : "text-[9px] font-bold text-yellow-500 uppercase";
+
+            // Atualizar Diagrama Visual
+            const inputHeight = (size / 23) * 80;
+            document.getElementById('ii-input-viz').style.height = inputHeight + "%";
+
+            const beamMargin = (100 - inputHeight) / 2;
+            const diagram = document.getElementById('ii-diagram');
+            diagram.style.setProperty('--beam-top', beamMargin + "%");
+            diagram.style.setProperty('--beam-bottom', (100 - beamMargin) + "%");
+
+            // Efeito de Zoom na Imagem
+            xrayImg.style.transform = `scale(${magnification.toFixed(2)})`;
+            document.getElementById('label-res').innerText = `FOV: ${size} cm | ZOOM: ${magnification.toFixed(1)}x`;
+
+            // Atualizar botões
+            document.querySelectorAll('.fov-btn').forEach(btn => {
+                if (btn.id === `fov-${size}`) {
+                    btn.className = "fov-btn bg-emerald-600 text-white text-[10px] font-bold py-2 rounded-lg border-2 border-emerald-400 transition-all";
+                } else {
+                    btn.className = "fov-btn bg-slate-800 text-slate-400 text-[10px] font-bold py-2 rounded-lg border border-slate-700 transition-all";
+                }
+            });
+
+            if (isFluoro) startFluoro(); // Reinicia para aplicar nova taxa de dose
+        }
+
+        function updateFOVUI() {
+            // Garante que o estado visual do zoom reseta ao sair de fluoro se for o caso
+            // No portal, mantemos o zoom para mostrar o efeito da colimação eletrônica
+        }
+
+        // START
+        initImage();
+    </script>
+</body>
+
+</html>
