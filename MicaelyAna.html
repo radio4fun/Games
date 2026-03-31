@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Mamografia - Física Radiológica III</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a1a;
+            color: #f8fafc;
+        }
+
+        .mamo-screen {
+            background: #000;
+            border: 4px solid #475569;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            height: 500px;
+            box-shadow: inset 0 0 50px rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mammogram-image {
+            transition: filter 0.3s ease, opacity 0.3s ease;
+            max-height: 90%;
+            filter: contrast(1) brightness(1) blur(0px);
+        }
+
+        .compression-indicator {
+            height: 4px;
+            background: #ec4899;
+            transition: width 0.3s ease;
+        }
+
+        .meter-fill {
+            transition: width 0.4s ease-out;
+        }
+
+        .target-active {
+            border-color: #ec4899 !important;
+            color: #ec4899 !important;
+            background: rgba(236, 72, 153, 0.1);
+        }
+
+        input[type=range] {
+            accent-color: #ec4899;
+        }
+    </style>
+</head>
+
+<body class="p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-pink-500 mb-2">Simulador de Física em Mamografia</h1>
+            <p class="text-slate-400">Disciplina: Física Radiológica III - Otimização de Imagem e Dose</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Painel de Parâmetros Técnicos -->
+            <div class="lg:col-span-4 bg-slate-900 p-6 rounded-xl border border-slate-800 space-y-5">
+                <h2 class="text-xl font-semibold border-b border-slate-800 pb-2 text-pink-400">Painel de Exposição</h2>
+
+                <!-- Seleção Alvo/Filtro -->
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase mb-2 block">Combinação Alvo/Filtro
+                        (Ânodo)</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="setAnode('MoMo')" id="btn-MoMo"
+                            class="border border-slate-700 p-2 rounded text-xs target-active">Mo/Mo (Baixa E)</button>
+                        <button onclick="setAnode('RhRh')" id="btn-RhRh"
+                            class="border border-slate-700 p-2 rounded text-xs">Rh/Rh (Alta E)</button>
+                    </div>
+                </div>
+
+                <!-- kVp e mAs -->
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <label class="text-sm">Tensão (kVp)</label>
+                            <span id="kvp-val" class="text-pink-400 font-mono">26 kV</span>
+                        </div>
+                        <input type="range" id="kvp-slider" min="22" max="35" value="26" class="w-full">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <label class="text-sm">Carga (mAs)</label>
+                            <span id="mas-val" class="text-pink-400 font-mono">80 mAs</span>
+                        </div>
+                        <input type="range" id="mas-slider" min="10" max="250" value="80" class="w-full">
+                    </div>
+                </div>
+
+                <!-- Compressão -->
+                <div class="pt-4 border-t border-slate-800">
+                    <h3 class="text-sm font-bold text-slate-300 mb-3">Posicionamento e Compressão</h3>
+                    <div>
+                        <div class="flex justify-between mb-1 text-xs">
+                            <label>Força de Compressão (daN)</label>
+                            <span id="force-val">12 daN</span>
+                        </div>
+                        <input type="range" id="force-slider" min="5" max="20" value="12" class="w-full">
+                    </div>
+                    <div class="mt-4">
+                        <label class="text-xs text-slate-500">Espessura da Mama: <span id="thick-val"
+                                class="text-slate-300">5.2 cm</span></label>
+                        <div class="w-full bg-slate-800 h-2 rounded-full mt-1">
+                            <div id="thick-bar" class="h-full bg-pink-600 rounded-full transition-all"
+                                style="width: 60%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="expose-btn"
+                    class="w-full py-4 bg-pink-600 hover:bg-pink-500 text-white font-bold rounded shadow-lg transition-all flex items-center justify-center gap-2 uppercase tracking-widest">
+                    Disparar RX
+                </button>
+            </div>
+
+            <!-- Área de Exibição do Exame -->
+            <div class="lg:col-span-8 space-y-4">
+                <div class="mamo-screen relative">
+                    <!-- Overlay de informações da imagem -->
+                    <div class="absolute top-4 left-4 text-[10px] font-mono text-white/50 space-y-1 z-20">
+                        <div>ID: MAMO-SIM-2024</div>
+                        <div>PROJEÇÃO: CC</div>
+                        <div id="img-stats">KV: 26 | mAs: 80 | Rh/Rh</div>
+                    </div>
+
+                    <!-- Imagem da Mama (SVG Simulando Raio-X) -->
+                    <svg id="mamo-svg" viewBox="0 0 400 500" class="mammogram-image w-full h-full">
+                        <defs>
+                            <radialGradient id="breastGrad" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.2" />
+                                <stop offset="100%" stop-color="#ffffff" stop-opacity="0.05" />
+                            </radialGradient>
+                            <filter id="glow">
+                                <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
+                                <feMerge>
+                                    <feMergeNode in="coloredBlur" />
+                                    <feMergeNode in="SourceGraphic" />
+                                </feMerge>
+                            </filter>
+                        </defs>
+                        <!-- Tecido Glandular -->
+                        <path id="breast-shape" d="M100 50 Q 350 250 100 450 L 50 450 L 50 50 Z" fill="url(#breastGrad)"
+                            stroke="white" stroke-width="0.5" />
+
+                        <!-- Nódulo Simulando Patologia (Para teste de contraste) -->
+                        <circle id="lesion" cx="200" cy="230" r="12" fill="white" opacity="0.3" filter="url(#glow)" />
+
+                        <!-- Microcalcificações -->
+                        <g id="calcifications" opacity="0.4">
+                            <circle cx="210" cy="215" r="0.8" fill="white" />
+                            <circle cx="215" cy="225" r="1.1" fill="white" />
+                            <circle cx="205" cy="228" r="0.7" fill="white" />
+                        </g>
+
+                        <!-- Ruído (Noise) -->
+                        <rect id="noise-rect" width="100%" height="100%" fill="transparent" />
+                    </svg>
+
+                    <!-- Mensagem de Instrução -->
+                    <div id="ready-overlay"
+                        class="absolute inset-0 bg-black/60 flex items-center justify-center z-10 transition-opacity">
+                        <div class="text-center">
+                            <div class="w-16 h-16 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"
+                                id="loading-spinner" style="display:none"></div>
+                            <p id="ready-text" class="text-pink-400 font-bold tracking-widest uppercase">Pronto para
+                                Exposição</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dashboards de Qualidade e Dose -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-slate-900 p-4 rounded-lg border border-slate-800">
+                        <span class="text-[10px] text-slate-500 uppercase font-bold">Dose Glandular Média (MGD)</span>
+                        <div class="text-2xl font-mono text-yellow-500" id="mgd-val">0.00 <small
+                                class="text-xs">mGy</small></div>
+                        <div class="w-full bg-slate-950 h-1 mt-2 rounded-full overflow-hidden">
+                            <div id="mgd-bar" class="h-full bg-yellow-500 meter-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 p-4 rounded-lg border border-slate-800">
+                        <span class="text-[10px] text-slate-500 uppercase font-bold">Resolução de Contraste</span>
+                        <div class="text-2xl font-mono text-cyan-400" id="contrast-val">0%</div>
+                        <div class="w-full bg-slate-950 h-1 mt-2 rounded-full overflow-hidden">
+                            <div id="contrast-bar" class="h-full bg-cyan-400 meter-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 p-4 rounded-lg border border-slate-800">
+                        <span class="text-[10px] text-slate-500 uppercase font-bold">Efeito da Espessura</span>
+                        <div class="text-sm text-slate-400 mt-1" id="thick-effect">Mama comprimida ajuda na
+                            uniformidade.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Guia Educativo -->
+        <section
+            class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-900/50 p-6 rounded-xl border border-slate-800">
+            <div>
+                <h3 class="font-bold text-pink-400 mb-2">Física Aplicada:</h3>
+                <ul class="text-xs text-slate-400 space-y-2 list-disc list-inside">
+                    <li><strong>Baixo kVp:</strong> Essencial na mamografia (22-35kV) para maximizar o efeito
+                        fotoelétrico em tecidos de Z baixo, aumentando o contraste.</li>
+                    <li><strong>Anodo/Filtro:</strong> Mo/Mo produz fótons de 17-19keV. Rh/Rh produz ~20-23keV, sendo
+                        melhor para mamas densas ou espessas (maior penetração).</li>
+                    <li><strong>Compressão:</strong> Reduz a espessura da mama, diminuindo a radiação espalhada (melhor
+                        contraste) e a dose (menos mAs necessário).</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-bold text-pink-400 mb-2">Desafio do Aluno:</h3>
+                <p class="text-xs text-slate-400">
+                    Tente visualizar as microcalcificações (pontos brancos no nódulo) com a menor dose possível. Se a
+                    mama for muito espessa (>6cm), observe como a combinação Mo/Mo gera uma imagem com muito ruído e
+                    dose alta se você não trocar para Rh/Rh.
+                </p>
+            </div>
+        </section>
+    </div>
+
+    <footer class="border-t border-slate-800 bg-slate-950 mt-12 py-12">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <div class="flex flex-col items-center mb-6">
+                <div class="italic uppercase font-black text-3xl tracking-tighter text-cyan-500 mb-1">FATESA</div>
+                <div class="h-1 w-12 bg-cyan-500 rounded-full"></div>
+            </div>
+            <div class="text-slate-500 text-sm">
+                <p>&copy; 2026 Curso de Radiologia. Todos os direitos reservados.</p>
+                <p class="mt-2 text-[10px] leading-relaxed uppercase tracking-widest">
+                    Desenvolvido por alunos e professora <span class="text-cyan-400">Raquel Pantojo de Souza
+                        Bachour</span><br>
+                    na disciplina de <span class="text-white">Física Radiológica III</span>.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const config = {
+            anode: 'MoMo',
+            kvp: 26,
+            mas: 80,
+            force: 12,
+            baseThickness: 7.0 // cm
+        };
+
+        const elements = {
+            kvpSlider: document.getElementById('kvp-slider'),
+            masSlider: document.getElementById('mas-slider'),
+            forceSlider: document.getElementById('force-slider'),
+            exposeBtn: document.getElementById('expose-btn'),
+            readyOverlay: document.getElementById('ready-overlay'),
+            readyText: document.getElementById('ready-text'),
+            spinner: document.getElementById('loading-spinner'),
+            breastShape: document.getElementById('breast-shape'),
+            lesion: document.getElementById('lesion'),
+            calcifications: document.getElementById('calcifications'),
+            mgdText: document.getElementById('mgd-val'),
+            contrastText: document.getElementById('contrast-val'),
+            imgStats: document.getElementById('img-stats'),
+            thickVal: document.getElementById('thick-val'),
+            thickBar: document.getElementById('thick-bar')
+        };
+
+        function setAnode(type) {
+            config.anode = type;
+            document.getElementById('btn-MoMo').classList.toggle('target-active', type === 'MoMo');
+            document.getElementById('btn-RhRh').classList.toggle('target-active', type === 'RhRh');
+            updateUI();
+        }
+
+        function updateUI() {
+            config.kvp = parseInt(elements.kvpSlider.value);
+            config.mas = parseInt(elements.masSlider.value);
+            config.force = parseInt(elements.forceSlider.value);
+
+            // Cálculo de espessura baseado na força
+            const currentThickness = config.baseThickness - (config.force * 0.15);
+            elements.thickVal.innerText = `${currentThickness.toFixed(1)} cm`;
+            elements.thickBar.style.width = `${(currentThickness / 10) * 100}%`;
+
+            document.getElementById('kvp-val').innerText = `${config.kvp} kV`;
+            document.getElementById('mas-val').innerText = `${config.mas} mAs`;
+            document.getElementById('force-val').innerText = `${config.force} daN`;
+        }
+
+        // Listeners
+        [elements.kvpSlider, elements.masSlider, elements.forceSlider].forEach(s => {
+            s.addEventListener('input', updateUI);
+        });
+
+        elements.exposeBtn.addEventListener('click', () => {
+            // Simular Processamento
+            elements.readyText.innerText = "EXPONDO...";
+            elements.spinner.style.display = "block";
+            elements.exposeBtn.disabled = true;
+
+            setTimeout(() => {
+                renderImage();
+                elements.readyOverlay.style.opacity = "0";
+                setTimeout(() => {
+                    elements.readyOverlay.style.display = "none";
+                }, 500);
+            }, 800);
+        });
+
+        // Clique na tela para resetar
+        document.querySelector('.mamo-screen').addEventListener('click', () => {
+            if (elements.readyOverlay.style.display === "none") {
+                elements.readyOverlay.style.display = "flex";
+                setTimeout(() => {
+                    elements.readyOverlay.style.opacity = "1";
+                    elements.readyText.innerText = "Pronto para Exposição";
+                    elements.spinner.style.display = "none";
+                    elements.exposeBtn.disabled = false;
+                }, 10);
+            }
+        });
+
+        function renderImage() {
+            const thickness = config.baseThickness - (config.force * 0.15);
+
+            // FÍSICA: Dose Glandular Média (MGD)
+            // Aumenta com mAs, kVp^2 e cai com espessura (se mantiver parâmetros), 
+            // mas o simulador assume controle automático ou manual.
+            const mgd = (config.mas * 0.015) * Math.pow(config.kvp / 25, 2) / (thickness * 0.5);
+
+            // FÍSICA: Resolução de Contraste
+            // Melhor com baixo kVp e Mo/Mo em mamas finas.
+            // Pior com alto kVp ou mamas muito espessas (espalhamento).
+            let contrastFactor = (40 - config.kvp) / 15; // kVp menor = mais contraste
+            if (config.anode === 'RhRh') contrastFactor *= 0.85; // Rh tem espectro mais duro
+
+            // Redução por espessura (scatter)
+            const scatterPenalty = Math.max(0.3, 1 - (thickness / 10));
+            const finalContrast = Math.min(100, (contrastFactor * scatterPenalty * 100));
+
+            // FÍSICA: Ruído (SNR)
+            // Muito mAs reduz o ruído.
+            const noiseLevel = Math.max(0, 1.5 - (config.mas / 100));
+
+            // Aplicar Visual
+            const brightness = Math.min(1.5, (config.mas * config.kvp) / 2000);
+            elements.breastShape.style.filter = `contrast(${0.5 + finalContrast / 100}) brightness(${brightness}) blur(${noiseLevel}px)`;
+
+            // Visibilidade da Lesão
+            const lesionOpacity = (finalContrast / 100) * 0.8;
+            elements.lesion.style.opacity = lesionOpacity;
+            elements.calcifications.style.opacity = lesionOpacity > 0.4 ? 1 : 0.2;
+
+            // UI
+            elements.mgdText.innerHTML = `${mgd.toFixed(2)} <small class="text-xs">mGy</small>`;
+            document.getElementById('mgd-bar').style.width = `${Math.min(100, mgd * 20)}%`;
+            if (mgd > 3) elements.mgdText.classList.add('text-red-500');
+            else elements.mgdText.classList.remove('text-red-500');
+
+            elements.contrastText.innerText = `${Math.round(finalContrast)}%`;
+            document.getElementById('contrast-bar').style.width = `${finalContrast}%`;
+
+            elements.imgStats.innerText = `KV: ${config.kvp} | mAs: ${config.mas} | ${config.anode} | ${thickness.toFixed(1)}cm`;
+
+            document.getElementById('thick-effect').innerText = thickness < 4.5 ?
+                "Ótima compressão: Contraste maximizado." :
+                "Mama espessa: Considerar Rh/Rh para reduzir dose.";
+        }
+
+        // Init
+        updateUI();
+
+
+    </script>
+</body>
+
+</html>
