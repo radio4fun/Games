@@ -1,4 +1,4 @@
-# 🎮📡 Radio4Fun  
+# 🎮☢️ Radio4Fun  
 ### Simuladores & Jogos Educativos em Radiologia e Física
 
 Radio4Fun é uma plataforma educacional interativa desenvolvida para o ensino de **Física Radiológica**, utilizando **simuladores e jogos digitais** como ferramenta de aprendizagem.
