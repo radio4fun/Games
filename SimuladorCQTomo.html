@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratório Virtual de CQ - Tomografia (IN 93/2021)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #020617; color: #f8fafc; min-height: 100vh; overflow-x: hidden; }
+        .glass-panel { background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(14px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .slider-custom { -webkit-appearance: none; width: 100%; height: 6px; background: #1e293b; border-radius: 5px; outline: none; }
+        .slider-custom::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: #0ea5e9; border-radius: 50%; cursor: pointer; box-shadow: 0 0 10px rgba(14, 165, 233, 0.5); }
+        .tab-btn { background: #1e293b; color: #94a3b8; border: 1px solid #334155; transition: all 0.2s; }
+        .tab-btn.active { background: #0ea5e9; color: white; border-color: #38bdf8; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3); }
+        .monitor-frame { border: 12px solid #1e293b; box-shadow: 0 0 40px rgba(0, 0, 0, 0.5); background: #000; position: relative; }
+        
+        /* Phantom Elements */
+        .phantom-base { width: 65%; height: 65%; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 2px solid #64748b; }
+        .roi-box { width: 30px; height: 30px; border: 2px dashed; position: absolute; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: bold; font-family: monospace;}
+        .roi-center { top: 50%; left: 50%; transform: translate(-50%, -50%); border-color: #22c55e; color: #22c55e;}
+        .roi-top { top: 20%; left: 50%; transform: translate(-50%, -50%); border-color: #f59e0b; color: #f59e0b;}
+        .roi-bottom { top: 80%; left: 50%; transform: translate(-50%, -50%); border-color: #f59e0b; color: #f59e0b;}
+        .roi-left { top: 50%; left: 20%; transform: translate(-50%, -50%); border-color: #f59e0b; color: #f59e0b;}
+        .roi-right { top: 50%; left: 80%; transform: translate(-50%, -50%); border-color: #f59e0b; color: #f59e0b;}
+        
+        /* Spatial Res Pattern */
+        .lp-pattern { background: repeating-linear-gradient(90deg, #fff, #fff 2px, #000 2px, #000 4px); width: 100px; height: 100px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); transition: filter 0.3s;}
+        
+        /* Slice Thickness Ramp */
+        .ramp-line { height: 4px; background: #22c55e; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); transition: width 0.3s; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <header class="max-w-7xl mx-auto flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
+        <div>
+            <h1 class="text-2xl font-black text-sky-500 tracking-tighter italic uppercase">Simulador <span class="text-white">CQ Avançado</span></h1>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500 mt-1">RDC 330 / IN 93/2021</p>
+        </div>
+        <div class="text-right">
+            <p class="text-[10px] text-slate-500 uppercase font-black">Módulo de Análise</p>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <div class="lg:col-span-3 space-y-3">
+            <div class="glass-panel p-3 rounded-xl flex flex-col gap-2">
+                <p class="text-[10px] font-bold text-slate-500 uppercase text-center mb-2">Selecione o Teste</p>
+                <button onclick="changeTest('phantom')" id="btn-phantom" class="tab-btn active py-2 text-[10px] font-bold uppercase rounded-lg">Exatidão, Ruído e Uniformidade</button>
+                <button onclick="changeTest('kvp')" id="btn-kvp" class="tab-btn py-2 text-[10px] font-bold uppercase rounded-lg">Tensão do Tubo (kVp)</button>
+                <button onclick="changeTest('dose')" id="btn-dose" class="tab-btn py-2 text-[10px] font-bold uppercase rounded-lg">Valores de Dose (CTDI)</button>
+                <button onclick="changeTest('resolucao')" id="btn-resolucao" class="tab-btn py-2 text-[10px] font-bold uppercase rounded-lg">Resolução Espacial</button>
+                <button onclick="changeTest('corte')" id="btn-corte" class="tab-btn py-2 text-[10px] font-bold uppercase rounded-lg">Espessura de Corte</button>
+            </div>
+
+            <div class="glass-panel p-4 rounded-xl border-l-4 border-emerald-500 bg-emerald-900/20" id="status-panel">
+                <h3 class="text-[9px] font-bold text-slate-400 uppercase">Status do Teste</h3>
+                <p id="info-status" class="text-lg font-black text-emerald-400 mt-1 uppercase tracking-wider">CONFORME</p>
+                <p id="info-action" class="text-[10px] text-slate-300 mt-2">Dentro dos limites da IN 93.</p>
+            </div>
+        </div>
+
+        <div class="lg:col-span-5 flex flex-col items-center">
+            <div class="monitor-frame aspect-square w-full rounded-lg overflow-hidden flex items-center justify-center relative">
+                
+                <div class="absolute top-4 left-4 font-mono text-[10px] text-sky-400 space-y-1 z-10">
+                    <p id="osd-test">TESTE: PHANTOM ÁGUA</p>
+                    <p id="osd-params">120 kV | 200 mAs | 5.0mm</p>
+                </div>
+
+                <div id="view-phantom" class="w-full h-full relative">
+                    <div class="phantom-base" id="phantom-bg" style="background: radial-gradient(circle, #334155 0%, #334155 100%);"></div>
+                    <div class="roi-box roi-center" id="roi-c">0</div>
+                    <div class="roi-box roi-top" id="roi-t">0</div>
+                    <div class="roi-box roi-bottom" id="roi-b">0</div>
+                    <div class="roi-box roi-left" id="roi-l">0</div>
+                    <div class="roi-box roi-right" id="roi-r">0</div>
+                </div>
+
+                <div id="view-kvp" class="w-full h-full relative hidden flex flex-col items-center justify-center">
+                    <i class="fa-solid fa-bolt text-6xl text-yellow-500 opacity-50 mb-4"></i>
+                    <div class="bg-slate-900 p-4 border border-slate-700 rounded-lg text-center">
+                        <p class="text-[10px] text-slate-400 uppercase">Painel do Tomógrafo</p>
+                        <p class="text-3xl font-mono text-white">120 <span class="text-lg">kVp</span></p>
+                    </div>
+                </div>
+
+                <div id="view-dose" class="w-full h-full relative hidden flex flex-col items-center justify-center">
+                    <i class="fa-solid fa-radiation text-6xl text-emerald-500 opacity-50 mb-4"></i>
+                    <div class="bg-slate-900 p-4 border border-slate-700 rounded-lg text-center">
+                        <p class="text-[10px] text-slate-400 uppercase">Dose Informada (CTDIvol)</p>
+                        <p class="text-3xl font-mono text-white">15.0 <span class="text-lg">mGy</span></p>
+                    </div>
+                </div>
+
+                <div id="view-resolucao" class="w-full h-full relative hidden bg-slate-800">
+                    <div class="lp-pattern" id="lp-img"></div>
+                </div>
+
+                <div id="view-corte" class="w-full h-full relative hidden bg-slate-800 flex items-center justify-center">
+                    <div class="w-[60%] h-[60%] border-2 border-slate-600 rounded-full relative">
+                        <div class="ramp-line" id="ramp-visual" style="width: 50px;"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="lg:col-span-4 space-y-4">
+            <div class="glass-panel p-5 rounded-2xl h-full flex flex-col">
+                <h2 class="text-xs font-bold uppercase tracking-widest text-white mb-4 border-b border-slate-700 pb-2">
+                    <i class="fa-solid fa-calculator text-sky-400 mr-2"></i> Medição e Análise
+                </h2>
+
+                <div id="ctrl-phantom" class="space-y-4">
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-slate-400">Calibração do Centro (HU)</label>
+                        <input type="range" id="sl-hu" min="-10" max="10" step="1" value="0" class="slider-custom mt-2" oninput="calcPhantom()">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-slate-400">Artefato de Borda (Cupping) (HU)</label>
+                        <input type="range" id="sl-unif" min="0" max="10" step="1" value="0" class="slider-custom mt-2" oninput="calcPhantom()">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-slate-400">Ruído (Desvio Padrão)</label>
+                        <input type="range" id="sl-noise" min="1" max="15" step="0.5" value="3.0" class="slider-custom mt-2" oninput="calcPhantom()">
+                    </div>
+                    
+                    <div class="bg-slate-900/50 p-3 rounded border border-slate-700 mt-4 text-[10px] space-y-1">
+                        <p class="text-sky-400 font-bold uppercase mb-2">Tolerâncias (IN 93):</p>
+                        <p>Exatidão Água: <span class="font-mono text-white">0 ± 4 HU</span></p>
+                        <p>Uniformidade (Centro vs Borda): <span class="font-mono text-white">± 2 HU</span></p>
+                        <p>Ruído: <span class="font-mono text-white">&lt; 5.0 (Didático)</span></p>
+                    </div>
+                </div>
+
+                <div id="ctrl-kvp" class="space-y-4 hidden">
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-slate-400">kVp Medido (Multímetro/Caneta)</label>
+                        <div class="flex items-center gap-2 mt-2">
+                            <input type="number" id="inp-kvp" value="120" class="w-full bg-slate-800 text-white px-3 py-2 rounded text-sm font-mono border border-slate-600 outline-none" oninput="calcKvp()">
+                            <span class="text-xs text-slate-400 font-bold">kV</span>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 p-3 rounded mt-2">
+                        <p class="text-[10px] text-slate-400">Desvio Calculado:</p>
+                        <p id="res-kvp" class="font-mono text-lg text-white">0.0%</p>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-2">Tolerância IN 93: <strong class="text-white">± 10%</strong></p>
+                </div>
+
+                <div id="ctrl-dose" class="space-y-4 hidden">
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-slate-400">Dose Medida (Câmara Ionização)</label>
+                        <div class="flex items-center gap-2 mt-2">
+                            <input type="number" id="inp-dose" value="15.0" step="0.1" class="w-full bg-slate-800 text-white px-3 py-2 rounded text-sm font-mono border border-slate-600 outline-none" oninput="calcDose()">
+                            <span class="text-xs text-slate-400 font-bold">mGy</span>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 p-3 rounded mt-2">
+                        <p class="text-[10px] text-slate-400">Desvio Calculado:</p>
+                        <p id="res-dose" class="font-mono text-lg text-white">0.0%</p>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-2">Tolerância IN 93: <strong class="text-white">± 20%</strong></p>
+                </div>
+
+                <div id="ctrl-resolucao" class="space-y-4 hidden">
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-slate-400">Qualidade Visual (lp/cm)</label>
+                        <input type="range" id="sl-res" min="0" max="10" step="1" value="0" class="slider-custom mt-2" oninput="calcRes()">
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-2">Simula a perda de resolução (borramento da imagem). A norma exige comparação com a linha de base do equipamento (variação máx ± 10%).</p>
+                </div>
+
+                <div id="ctrl-corte" class="space-y-4 hidden">
+                    <p class="text-[10px] text-slate-400 mb-2">Espessura Nominal Programada: <strong class="text-white">5.0 mm</strong></p>
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-slate-400">Medida da Rampa (FWHM)</label>
+                        <div class="flex items-center gap-2 mt-2">
+                            <input type="number" id="inp-corte" value="5.0" step="0.1" class="w-full bg-slate-800 text-white px-3 py-2 rounded text-sm font-mono border border-slate-600 outline-none" oninput="calcCorte()">
+                            <span class="text-xs text-slate-400 font-bold">mm</span>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 p-3 rounded mt-2">
+                        <p class="text-[10px] text-slate-400">Desvio Absoluto:</p>
+                        <p id="res-corte" class="font-mono text-lg text-white">0.0 mm</p>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-2">Tolerância IN 93 (Cortes > 2mm): <strong class="text-white">± 1.0 mm</strong></p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Função para trocar de abas
+        function changeTest(testName) {
+            const tests = ['phantom', 'kvp', 'dose', 'resolucao', 'corte'];
+            
+            tests.forEach(t => {
+                document.getElementById('btn-' + t).classList.remove('active');
+                document.getElementById('view-' + t).classList.add('hidden');
+                document.getElementById('ctrl-' + t).classList.add('hidden');
+            });
+            
+            document.getElementById('btn-' + testName).classList.add('active');
+            document.getElementById('view-' + testName).classList.remove('hidden');
+            document.getElementById('ctrl-' + testName).classList.remove('hidden');
+
+            document.getElementById('osd-test').innerText = `TESTE: ${testName.toUpperCase()}`;
+
+            // Reset/Recalculate the active test
+            if(testName === 'phantom') calcPhantom();
+            if(testName === 'kvp') calcKvp();
+            if(testName === 'dose') calcDose();
+            if(testName === 'resolucao') calcRes();
+            if(testName === 'corte') calcCorte();
+        }
+
+        // Função Genérica de Status
+        function updateStatus(isConforme, message) {
+            const panel = document.getElementById('status-panel');
+            const statusText = document.getElementById('info-status');
+            const actionText = document.getElementById('info-action');
+
+            if (isConforme) {
+                panel.className = "glass-panel p-4 rounded-xl border-l-4 border-emerald-500 bg-emerald-900/20";
+                statusText.innerText = "CONFORME";
+                statusText.className = "text-lg font-black text-emerald-400 mt-1 uppercase tracking-wider";
+                actionText.innerText = message || "Dentro dos limites da IN 93.";
+            } else {
+                panel.className = "glass-panel p-4 rounded-xl border-l-4 border-red-500 bg-red-900/20";
+                statusText.innerText = "NÃO CONFORME";
+                statusText.className = "text-lg font-black text-red-500 mt-1 uppercase tracking-wider";
+                actionText.innerText = message;
+            }
+        }
+
+        // Lógicas Específicas de Cada Teste
+        function calcPhantom() {
+            const centerHU = parseInt(document.getElementById('sl-hu').value);
+            const edgeDrop = parseInt(document.getElementById('sl-unif').value);
+            const noise = parseFloat(document.getElementById('sl-noise').value);
+
+            const edgeVal = centerHU - edgeDrop;
+
+            document.getElementById('roi-c').innerText = centerHU;
+            document.getElementById('roi-t').innerText = edgeVal;
+            document.getElementById('roi-b').innerText = edgeVal;
+            document.getElementById('roi-l').innerText = edgeVal;
+            document.getElementById('roi-r').innerText = edgeVal;
+
+            // Visual Simulation
+            const bg = document.getElementById('phantom-bg');
+            if(edgeDrop > 0) {
+                bg.style.background = `radial-gradient(circle, #334155 0%, #1e293b 100%)`; // Cupping effect
+            } else {
+                bg.style.background = `#334155`;
+            }
+
+            // Evaluation
+            let isOk = true;
+            let msg = "Exatidão, Uniformidade e Ruído OK.";
+
+            if (Math.abs(centerHU) > 4) { isOk = false; msg = "Falha na Exatidão: Variação > ± 4 HU."; }
+            else if (Math.abs(centerHU - edgeVal) > 2) { isOk = false; msg = "Falha na Uniformidade: Dif > 2 HU entre centro e borda."; }
+            else if (noise >= 5.0) { isOk = false; msg = "Falha: Ruído acima do limite estabelecido."; }
+
+            updateStatus(isOk, msg);
+        }
+
+        function calcKvp() {
+            const nominal = 120.0;
+            const measured = parseFloat(document.getElementById('inp-kvp').value) || 0;
+            const dev = ((measured - nominal) / nominal) * 100;
+
+            document.getElementById('res-kvp').innerText = `${dev > 0 ? '+' : ''}${dev.toFixed(2)}%`;
+
+            if (Math.abs(dev) <= 10.0) updateStatus(true, "Desvio de kVp menor que 10%.");
+            else updateStatus(false, "Desvio > 10%. Risco de dose inadequada e contraste ruim.");
+        }
+
+        function calcDose() {
+            const nominal = 15.0;
+            const measured = parseFloat(document.getElementById('inp-dose').value) || 0;
+            const dev = ((measured - nominal) / nominal) * 100;
+
+            document.getElementById('res-dose').innerText = `${dev > 0 ? '+' : ''}${dev.toFixed(2)}%`;
+
+            if (Math.abs(dev) <= 20.0) updateStatus(true, "Variação de dose tolerável (≤ 20%).");
+            else updateStatus(false, "Variação > 20%. Risco radiológico ao paciente.");
+        }
+
+        function calcRes() {
+            const blur = document.getElementById('sl-res').value;
+            document.getElementById('lp-img').style.filter = `blur(${blur}px)`;
+
+            if (blur < 4) updateStatus(true, "Resolução de alto contraste mantida.");
+            else updateStatus(false, "Perda de resolução espacial. Reprovação visual (Fantoma de barras).");
+        }
+
+        function calcCorte() {
+            const nominal = 5.0;
+            const measured = parseFloat(document.getElementById('inp-corte').value) || 0;
+            const dev = Math.abs(measured - nominal);
+
+            document.getElementById('res-corte').innerText = `${dev.toFixed(2)} mm`;
+            
+            // Visual width (10px per mm)
+            document.getElementById('ramp-visual').style.width = `${measured * 10}px`;
+
+            if (dev <= 1.0) updateStatus(true, "Espessura de corte dentro da tolerância (± 1mm).");
+            else updateStatus(false, "Desvio > 1.0 mm. Colimadores dessincronizados.");
+        }
+
+        // Init
+        calcPhantom();
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratório Virtual de CQ - Tomografia (IN 93/2021)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #020617; color: #f8fafc; min-height: 100vh; overflow-x: hidden; }
+        .glass-panel { background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(14px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .slider-custom { -webkit-appearance: none; width: 100%; height: 6px; background: #1e293b; border-radius: 5px; outline: none; }
+        .slider-custom::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: #0ea5e9; border-radius: 50%; cursor: pointer; box-shadow: 0 0 10px rgba(14, 165, 233, 0.5); }
+        .tab-btn { background: #1e293b; color: #94a3b8; border: 1px solid #334155; transition: all 0.2s; }
+        .tab-btn.active { background: #0ea5e9; color: white; border-color: #38bdf8; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3); }
+        .monitor-frame { border: 12px solid #1e293b; box-shadow: 0 0 40px rgba(0, 0, 0, 0.5); background: #000; position: relative; }
+        
+        /* Phantom Elements */
+        .phantom-base { width: 65%; height: 65%; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 2px solid #64748b; }
+        .roi-box { width: 30px; height: 30px; border: 2px dashed; position: absolute; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: bold; font-family: monospace;}
+        .roi-center { top: 50%; left: 50%; transform: translate(-50%, -50%); border-color: #22c55e; color: #22c55e;}
+        .roi-top { top: 20%; left: 50%; transform: translate(-50%, -50%); border-color: #f59e0b; color: #f59e0b;}
+        .roi-bottom { top: 80%; left: 50%; transform: translate(-50%, -50%); border-color: #f59e0b; color: #f59e0b;}
+        .roi-left { top: 50%; left: 20%; transform: translate(-50%, -50%); border-color: #f59e0b; color: #f59e0b;}
+        .roi-right { top: 50%; left: 80%; transform: translate(-50%, -50%); border-color: #f59e0b; color: #f59e0b;}
+        
+        /* Spatial Res Pattern */
+        .lp-pattern { background: repeating-linear-gradient(90deg, #fff, #fff 2px, #000 2px, #000 4px); width: 100px; height: 100px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); transition: filter 0.3s;}
+        
+        /* Slice Thickness Ramp */
+        .ramp-line { height: 4px; background: #22c55e; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); transition: width 0.3s; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <header class="max-w-7xl mx-auto flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
+        <div>
+            <h1 class="text-2xl font-black text-sky-500 tracking-tighter italic uppercase">Simulador <span class="text-white">CQ Avançado</span></h1>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500 mt-1">RDC 330 / IN 93/2021</p>
+        </div>
+        <div class="text-right">
+            <p class="text-[10px] text-slate-500 uppercase font-black">Módulo de Análise</p>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <div class="lg:col-span-3 space-y-3">
+            <div class="glass-panel p-3 rounded-xl flex flex-col gap-2">
+                <p class="text-[10px] font-bold text-slate-500 uppercase text-center mb-2">Selecione o Teste</p>
+                <button onclick="changeTest('phantom')" id="btn-phantom" class="tab-btn active py-2 text-[10px] font-bold uppercase rounded-lg">Exatidão, Ruído e Uniformidade</button>
+                <button onclick="changeTest('kvp')" id="btn-kvp" class="tab-btn py-2 text-[10px] font-bold uppercase rounded-lg">Tensão do Tubo (kVp)</button>
+                <button onclick="changeTest('dose')" id="btn-dose" class="tab-btn py-2 text-[10px] font-bold uppercase rounded-lg">Valores de Dose (CTDI)</button>
+                <button onclick="changeTest('resolucao')" id="btn-resolucao" class="tab-btn py-2 text-[10px] font-bold uppercase rounded-lg">Resolução Espacial</button>
+                <button onclick="changeTest('corte')" id="btn-corte" class="tab-btn py-2 text-[10px] font-bold uppercase rounded-lg">Espessura de Corte</button>
+            </div>
+
+            <div class="glass-panel p-4 rounded-xl border-l-4 border-emerald-500 bg-emerald-900/20" id="status-panel">
+                <h3 class="text-[9px] font-bold text-slate-400 uppercase">Status do Teste</h3>
+                <p id="info-status" class="text-lg font-black text-emerald-400 mt-1 uppercase tracking-wider">CONFORME</p>
+                <p id="info-action" class="text-[10px] text-slate-300 mt-2">Dentro dos limites da IN 93.</p>
+            </div>
+        </div>
+
+        <div class="lg:col-span-5 flex flex-col items-center">
+            <div class="monitor-frame aspect-square w-full rounded-lg overflow-hidden flex items-center justify-center relative">
+                
+                <div class="absolute top-4 left-4 font-mono text-[10px] text-sky-400 space-y-1 z-10">
+                    <p id="osd-test">TESTE: PHANTOM ÁGUA</p>
+                    <p id="osd-params">120 kV | 200 mAs | 5.0mm</p>
+                </div>
+
+                <div id="view-phantom" class="w-full h-full relative">
+                    <div class="phantom-base" id="phantom-bg" style="background: radial-gradient(circle, #334155 0%, #334155 100%);"></div>
+                    <div class="roi-box roi-center" id="roi-c">0</div>
+                    <div class="roi-box roi-top" id="roi-t">0</div>
+                    <div class="roi-box roi-bottom" id="roi-b">0</div>
+                    <div class="roi-box roi-left" id="roi-l">0</div>
+                    <div class="roi-box roi-right" id="roi-r">0</div>
+                </div>
+
+                <div id="view-kvp" class="w-full h-full relative hidden flex flex-col items-center justify-center">
+                    <i class="fa-solid fa-bolt text-6xl text-yellow-500 opacity-50 mb-4"></i>
+                    <div class="bg-slate-900 p-4 border border-slate-700 rounded-lg text-center">
+                        <p class="text-[10px] text-slate-400 uppercase">Painel do Tomógrafo</p>
+                        <p class="text-3xl font-mono text-white">120 <span class="text-lg">kVp</span></p>
+                    </div>
+                </div>
+
+                <div id="view-dose" class="w-full h-full relative hidden flex flex-col items-center justify-center">
+                    <i class="fa-solid fa-radiation text-6xl text-emerald-500 opacity-50 mb-4"></i>
+                    <div class="bg-slate-900 p-4 border border-slate-700 rounded-lg text-center">
+                        <p class="text-[10px] text-slate-400 uppercase">Dose Informada (CTDIvol)</p>
+                        <p class="text-3xl font-mono text-white">15.0 <span class="text-lg">mGy</span></p>
+                    </div>
+                </div>
+
+                <div id="view-resolucao" class="w-full h-full relative hidden bg-slate-800">
+                    <div class="lp-pattern" id="lp-img"></div>
+                </div>
+
+                <div id="view-corte" class="w-full h-full relative hidden bg-slate-800 flex items-center justify-center">
+                    <div class="w-[60%] h-[60%] border-2 border-slate-600 rounded-full relative">
+                        <div class="ramp-line" id="ramp-visual" style="width: 50px;"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="lg:col-span-4 space-y-4">
+            <div class="glass-panel p-5 rounded-2xl h-full flex flex-col">
+                <h2 class="text-xs font-bold uppercase tracking-widest text-white mb-4 border-b border-slate-700 pb-2">
+                    <i class="fa-solid fa-calculator text-sky-400 mr-2"></i> Medição e Análise
+                </h2>
+
+                <div id="ctrl-phantom" class="space-y-4">
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-slate-400">Calibração do Centro (HU)</label>
+                        <input type="range" id="sl-hu" min="-10" max="10" step="1" value="0" class="slider-custom mt-2" oninput="calcPhantom()">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-slate-400">Artefato de Borda (Cupping) (HU)</label>
+                        <input type="range" id="sl-unif" min="0" max="10" step="1" value="0" class="slider-custom mt-2" oninput="calcPhantom()">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-slate-400">Ruído (Desvio Padrão)</label>
+                        <input type="range" id="sl-noise" min="1" max="15" step="0.5" value="3.0" class="slider-custom mt-2" oninput="calcPhantom()">
+                    </div>
+                    
+                    <div class="bg-slate-900/50 p-3 rounded border border-slate-700 mt-4 text-[10px] space-y-1">
+                        <p class="text-sky-400 font-bold uppercase mb-2">Tolerâncias (IN 93):</p>
+                        <p>Exatidão Água: <span class="font-mono text-white">0 ± 4 HU</span></p>
+                        <p>Uniformidade (Centro vs Borda): <span class="font-mono text-white">± 2 HU</span></p>
+                        <p>Ruído: <span class="font-mono text-white">&lt; 5.0 (Didático)</span></p>
+                    </div>
+                </div>
+
+                <div id="ctrl-kvp" class="space-y-4 hidden">
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-slate-400">kVp Medido (Multímetro/Caneta)</label>
+                        <div class="flex items-center gap-2 mt-2">
+                            <input type="number" id="inp-kvp" value="120" class="w-full bg-slate-800 text-white px-3 py-2 rounded text-sm font-mono border border-slate-600 outline-none" oninput="calcKvp()">
+                            <span class="text-xs text-slate-400 font-bold">kV</span>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 p-3 rounded mt-2">
+                        <p class="text-[10px] text-slate-400">Desvio Calculado:</p>
+                        <p id="res-kvp" class="font-mono text-lg text-white">0.0%</p>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-2">Tolerância IN 93: <strong class="text-white">± 10%</strong></p>
+                </div>
+
+                <div id="ctrl-dose" class="space-y-4 hidden">
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-slate-400">Dose Medida (Câmara Ionização)</label>
+                        <div class="flex items-center gap-2 mt-2">
+                            <input type="number" id="inp-dose" value="15.0" step="0.1" class="w-full bg-slate-800 text-white px-3 py-2 rounded text-sm font-mono border border-slate-600 outline-none" oninput="calcDose()">
+                            <span class="text-xs text-slate-400 font-bold">mGy</span>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 p-3 rounded mt-2">
+                        <p class="text-[10px] text-slate-400">Desvio Calculado:</p>
+                        <p id="res-dose" class="font-mono text-lg text-white">0.0%</p>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-2">Tolerância IN 93: <strong class="text-white">± 20%</strong></p>
+                </div>
+
+                <div id="ctrl-resolucao" class="space-y-4 hidden">
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-slate-400">Qualidade Visual (lp/cm)</label>
+                        <input type="range" id="sl-res" min="0" max="10" step="1" value="0" class="slider-custom mt-2" oninput="calcRes()">
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-2">Simula a perda de resolução (borramento da imagem). A norma exige comparação com a linha de base do equipamento (variação máx ± 10%).</p>
+                </div>
+
+                <div id="ctrl-corte" class="space-y-4 hidden">
+                    <p class="text-[10px] text-slate-400 mb-2">Espessura Nominal Programada: <strong class="text-white">5.0 mm</strong></p>
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-slate-400">Medida da Rampa (FWHM)</label>
+                        <div class="flex items-center gap-2 mt-2">
+                            <input type="number" id="inp-corte" value="5.0" step="0.1" class="w-full bg-slate-800 text-white px-3 py-2 rounded text-sm font-mono border border-slate-600 outline-none" oninput="calcCorte()">
+                            <span class="text-xs text-slate-400 font-bold">mm</span>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 p-3 rounded mt-2">
+                        <p class="text-[10px] text-slate-400">Desvio Absoluto:</p>
+                        <p id="res-corte" class="font-mono text-lg text-white">0.0 mm</p>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-2">Tolerância IN 93 (Cortes > 2mm): <strong class="text-white">± 1.0 mm</strong></p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Função para trocar de abas
+        function changeTest(testName) {
+            const tests = ['phantom', 'kvp', 'dose', 'resolucao', 'corte'];
+            
+            tests.forEach(t => {
+                document.getElementById('btn-' + t).classList.remove('active');
+                document.getElementById('view-' + t).classList.add('hidden');
+                document.getElementById('ctrl-' + t).classList.add('hidden');
+            });
+            
+            document.getElementById('btn-' + testName).classList.add('active');
+            document.getElementById('view-' + testName).classList.remove('hidden');
+            document.getElementById('ctrl-' + testName).classList.remove('hidden');
+
+            document.getElementById('osd-test').innerText = `TESTE: ${testName.toUpperCase()}`;
+
+            // Reset/Recalculate the active test
+            if(testName === 'phantom') calcPhantom();
+            if(testName === 'kvp') calcKvp();
+            if(testName === 'dose') calcDose();
+            if(testName === 'resolucao') calcRes();
+            if(testName === 'corte') calcCorte();
+        }
+
+        // Função Genérica de Status
+        function updateStatus(isConforme, message) {
+            const panel = document.getElementById('status-panel');
+            const statusText = document.getElementById('info-status');
+            const actionText = document.getElementById('info-action');
+
+            if (isConforme) {
+                panel.className = "glass-panel p-4 rounded-xl border-l-4 border-emerald-500 bg-emerald-900/20";
+                statusText.innerText = "CONFORME";
+                statusText.className = "text-lg font-black text-emerald-400 mt-1 uppercase tracking-wider";
+                actionText.innerText = message || "Dentro dos limites da IN 93.";
+            } else {
+                panel.className = "glass-panel p-4 rounded-xl border-l-4 border-red-500 bg-red-900/20";
+                statusText.innerText = "NÃO CONFORME";
+                statusText.className = "text-lg font-black text-red-500 mt-1 uppercase tracking-wider";
+                actionText.innerText = message;
+            }
+        }
+
+        // Lógicas Específicas de Cada Teste
+        function calcPhantom() {
+            const centerHU = parseInt(document.getElementById('sl-hu').value);
+            const edgeDrop = parseInt(document.getElementById('sl-unif').value);
+            const noise = parseFloat(document.getElementById('sl-noise').value);
+
+            const edgeVal = centerHU - edgeDrop;
+
+            document.getElementById('roi-c').innerText = centerHU;
+            document.getElementById('roi-t').innerText = edgeVal;
+            document.getElementById('roi-b').innerText = edgeVal;
+            document.getElementById('roi-l').innerText = edgeVal;
+            document.getElementById('roi-r').innerText = edgeVal;
+
+            // Visual Simulation
+            const bg = document.getElementById('phantom-bg');
+            if(edgeDrop > 0) {
+                bg.style.background = `radial-gradient(circle, #334155 0%, #1e293b 100%)`; // Cupping effect
+            } else {
+                bg.style.background = `#334155`;
+            }
+
+            // Evaluation
+            let isOk = true;
+            let msg = "Exatidão, Uniformidade e Ruído OK.";
+
+            if (Math.abs(centerHU) > 4) { isOk = false; msg = "Falha na Exatidão: Variação > ± 4 HU."; }
+            else if (Math.abs(centerHU - edgeVal) > 2) { isOk = false; msg = "Falha na Uniformidade: Dif > 2 HU entre centro e borda."; }
+            else if (noise >= 5.0) { isOk = false; msg = "Falha: Ruído acima do limite estabelecido."; }
+
+            updateStatus(isOk, msg);
+        }
+
+        function calcKvp() {
+            const nominal = 120.0;
+            const measured = parseFloat(document.getElementById('inp-kvp').value) || 0;
+            const dev = ((measured - nominal) / nominal) * 100;
+
+            document.getElementById('res-kvp').innerText = `${dev > 0 ? '+' : ''}${dev.toFixed(2)}%`;
+
+            if (Math.abs(dev) <= 10.0) updateStatus(true, "Desvio de kVp menor que 10%.");
+            else updateStatus(false, "Desvio > 10%. Risco de dose inadequada e contraste ruim.");
+        }
+
+        function calcDose() {
+            const nominal = 15.0;
+            const measured = parseFloat(document.getElementById('inp-dose').value) || 0;
+            const dev = ((measured - nominal) / nominal) * 100;
+
+            document.getElementById('res-dose').innerText = `${dev > 0 ? '+' : ''}${dev.toFixed(2)}%`;
+
+            if (Math.abs(dev) <= 20.0) updateStatus(true, "Variação de dose tolerável (≤ 20%).");
+            else updateStatus(false, "Variação > 20%. Risco radiológico ao paciente.");
+        }
+
+        function calcRes() {
+            const blur = document.getElementById('sl-res').value;
+            document.getElementById('lp-img').style.filter = `blur(${blur}px)`;
+
+            if (blur < 4) updateStatus(true, "Resolução de alto contraste mantida.");
+            else updateStatus(false, "Perda de resolução espacial. Reprovação visual (Fantoma de barras).");
+        }
+
+        function calcCorte() {
+            const nominal = 5.0;
+            const measured = parseFloat(document.getElementById('inp-corte').value) || 0;
+            const dev = Math.abs(measured - nominal);
+
+            document.getElementById('res-corte').innerText = `${dev.toFixed(2)} mm`;
+            
+            // Visual width (10px per mm)
+            document.getElementById('ramp-visual').style.width = `${measured * 10}px`;
+
+            if (dev <= 1.0) updateStatus(true, "Espessura de corte dentro da tolerância (± 1mm).");
+            else updateStatus(false, "Desvio > 1.0 mm. Colimadores dessincronizados.");
+        }
+
+        // Init
+        calcPhantom();
+    </script>
+</body>
+</html>
