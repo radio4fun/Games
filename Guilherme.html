@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mamografia Prática: Desafio de Posicionamento e Física</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- FontAwesome para Ícones -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+
+body {
+font-family: 'Plus Jakarta Sans', sans-serif;
+background-color: #090d16;
+color: #f1f5f9;
+}
+
+.mono-font {
+font-family: 'Space Mono', monospace;
+}
+
+/* Efeitos visuais */
+.glass-panel {
+background: rgba(15, 23, 42, 0.75);
+backdrop-filter: blur(12px);
+border: 1px stroke rgba(255, 255, 255, 0.08);
+}
+
+.shadow-neon {
+box-shadow: 0 0 20px rgba(244, 63, 94, 0.25);
+}
+
+.progress-bar {
+transition: width 0.4s ease-in-out;
+}
+
+/* Animação de Radiação Ativa */
+@keyframes flash-red {
+0%, 100% { background-color: rgba(239, 68, 68, 0.1); }
+50% { background-color: rgba(239, 68, 68, 0.5); }
+}
+.radiation-flash {
+animation: flash-red 0.5s ease-in-out infinite;
+}
+</style>
+</head>
+<body class="min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+<!-- Cabeçalho Principal -->
+<header class="bg-slate-950 border-b border-slate-900 py-3 px-6 sticky top-0 z-50">
+<div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+<div class="flex items-center gap-3">
+<div class="bg-rose-600 text-white p-2.5 rounded-xl shadow-lg shadow-rose-600/30">
+<i class="fa-solid fa-person-breast text-2xl animate-pulse"></i>
+</div>
+<div>
+<h1 class="text-lg md:text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
+Mamo<span class="text-rose-500">Practice</span>
+<span class="text-[10px] bg-rose-500/10 text-rose-400 px-2 py-0.5 rounded border border-rose-500/25">Simulador Clínico</span>
+</h1>
+<p class="text-[11px] text-slate-400">Aprende o Posicionamento, a Física e a Radioproteção na Prática</p>
+</div>
+</div>
+
+<!-- Placar de Performance -->
+<div class="flex items-center gap-4 bg-slate-900/60 border border-slate-800 px-4 py-2 rounded-2xl">
+<div class="text-center">
+<span class="text-[9px] uppercase font-bold text-slate-500 block tracking-wider">Pontuação</span>
+<p id="score-display" class="text-sm font-bold text-amber-400 mono-font">0 XP</p>
+</div>
+<div class="h-6 w-px bg-slate-800"></div>
+<div class="text-center">
+<span class="text-[9px] uppercase font-bold text-slate-500 block tracking-wider">Erros</span>
+<p id="errors-display" class="text-sm font-bold text-rose-500 mono-font">0/3</p>
+</div>
+<div class="h-6 w-px bg-slate-800"></div>
+<div class="text-center">
+<span class="text-[9px] uppercase font-bold text-slate-500 block tracking-wider">Nível</span>
+<p id="rank-display" class="text-sm font-bold text-teal-400">Estudante</p>
+</div>
+</div>
+</div>
+</header>
+
+<!-- Área do Jogo e Fluxo de Passos -->
+<main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+<!-- FLUXOGRAMA DE PASSOS (Esquerda) -->
+<div class="lg:col-span-3 space-y-3">
+<div class="bg-slate-950 border border-slate-900 rounded-2xl p-4">
+<h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Etapas do Exame</h3>
+<div class="space-y-2.5" id="steps-container">
+<div id="step-btn-1" class="step-card flex items-center gap-3 p-2.5 rounded-xl border border-rose-500 bg-rose-500/10 text-rose-400 text-xs font-semibold">
+<span class="w-6 h-6 rounded-lg bg-rose-600 text-white flex items-center justify-center font-bold text-[10px]">1</span>
+<span>1. Diálogo & Anamnese</span>
+</div>
+<div id="step-btn-2" class="step-card flex items-center gap-3 p-2.5 rounded-xl border border-slate-900 text-slate-500 text-xs font-semibold">
+<span class="w-6 h-6 rounded-lg bg-slate-900 text-slate-600 flex items-center justify-center font-bold text-[10px]">2</span>
+<span>2. Altura do Mamógrafo</span>
+</div>
+<div id="step-btn-3" class="step-card flex items-center gap-3 p-2.5 rounded-xl border border-slate-900 text-slate-500 text-xs font-semibold">
+<span class="w-6 h-6 rounded-lg bg-slate-900 text-slate-600 flex items-center justify-center font-bold text-[10px]">3</span>
+<span>3. Alinhamento da Mama</span>
+</div>
+<div id="step-btn-4" class="step-card flex items-center gap-3 p-2.5 rounded-xl border border-slate-900 text-slate-500 text-xs font-semibold">
+<span class="w-6 h-6 rounded-lg bg-slate-900 text-slate-600 flex items-center justify-center font-bold text-[10px]">4</span>
+<span>4. Compressão de Tecido</span>
+</div>
+<div id="step-btn-5" class="step-card flex items-center gap-3 p-2.5 rounded-xl border border-slate-900 text-slate-500 text-xs font-semibold">
+<span class="w-6 h-6 rounded-lg bg-slate-900 text-slate-600 flex items-center justify-center font-bold text-[10px]">5</span>
+<span>5. Consola & Proteção</span>
+</div>
+<div id="step-btn-6" class="step-card flex items-center gap-3 p-2.5 rounded-xl border border-slate-900 text-slate-500 text-xs font-semibold">
+<span class="w-6 h-6 rounded-lg bg-slate-900 text-slate-600 flex items-center justify-center font-bold text-[10px]">6</span>
+<span>6. Diagnóstico Clínico</span>
+</div>
+</div>
+</div>
+
+<!-- Ajuda e Orientação da Física Médica -->
+<div class="bg-rose-950/10 border border-rose-900/30 rounded-2xl p-4 space-y-2">
+<h4 class="text-xs font-bold text-rose-400 flex items-center gap-1.5">
+<i class="fa-solid fa-user-doctor"></i> Conselhos da Física Médica:
+</h4>
+<p id="tutor-text" class="text-[11px] text-slate-300 leading-relaxed">
+Olá! Sou a Dra. Clara, Física Médica. Vou guiar-te na realização do exame. Começa por receber a paciente e explica-lhe porque a compressão é necessária do ponto de vista da física.
+</p>
+</div>
+</div>
+
+<!-- JANELA INTERATIVA CENTRAL (Lg: col-span-9) -->
+<div id="game-arena" class="lg:col-span-9 bg-slate-950/40 border border-slate-900 rounded-3xl p-4 md:p-6 flex flex-col justify-between min-h-[580px] relative overflow-hidden">
+
+<!-- MODAL DE FEEDBACK INTERNO (Sem alert de browser) -->
+<div id="custom-modal" class="hidden absolute inset-0 bg-slate-950/95 z-50 flex flex-col items-center justify-center p-6 text-center">
+<div id="modal-icon-container" class="w-16 h-16 rounded-full flex items-center justify-center text-3xl mb-4">
+<i id="modal-icon" class="fa-solid fa-circle-check"></i>
+</div>
+<h3 id="modal-title" class="text-lg font-bold text-white mb-2">Mensagem do Sistema</h3>
+<p id="modal-message" class="text-xs text-slate-400 max-w-md leading-relaxed mb-6">Breve explicação clínica ou física.</p>
+<button id="modal-action-btn" onclick="closeModal()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-6 rounded-xl text-xs transition-all">
+Continuar Exame <i class="fa-solid fa-arrow-right ml-1"></i>
+</button>
+</div>
+
+<!-- FASE 1: DIÁLOGO E ANAMNESE -->
+<div id="phase-1" class="phase-container space-y-6">
+<div class="border-b border-slate-800 pb-3">
+<span class="text-xs font-bold uppercase tracking-wider text-rose-500">Etapa 1: Acolhimento e Explicação Científica</span>
+<h2 class="text-base font-bold text-white mt-1">Acolhe a Paciente e Explica a Importância da Física da Compressão</h2>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+<div class="md:col-span-4 flex flex-col items-center bg-slate-900/40 p-4 rounded-2xl border border-slate-800">
+<span id="patient-emoji" class="text-6xl mb-3">👩‍🦳</span>
+<div class="text-center">
+<h4 id="patient-name" class="font-bold text-white text-sm">D.ª Francisca</h4>
+<span id="patient-tag" class="text-[9px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-bold uppercase border border-emerald-500/20">Mama Adiposa</span>
+<p id="patient-desc" class="text-[11px] text-slate-400 mt-2 italic">"Dizem que o exame dói muito... Tem mesmo de apertar tanto o peito?"</p>
+</div>
+</div>
+
+<div class="md:col-span-8 space-y-3">
+<span class="text-xs text-slate-400 font-semibold block">Escolhe a tua explicação clínica/física para tranquilizar a paciente:</span>
+<div class="space-y-2.5">
+<button onclick="chooseDialogue(1, 0)" class="w-full text-left p-3 rounded-xl border border-slate-800 hover:border-rose-500/50 hover:bg-slate-900 text-xs transition-all flex items-start gap-3">
+<span class="w-5 h-5 rounded bg-slate-800 text-slate-400 flex items-center justify-center font-bold text-[10px] mt-0.5">A</span>
+<span class="text-slate-300">"Sim, tem de apertar. São as regras do hospital e não podemos mudar. É rápido, tente não se mexer."</span>
+</button>
+<button onclick="chooseDialogue(1, 1)" class="w-full text-left p-3 rounded-xl border border-slate-800 hover:border-rose-500/50 hover:bg-slate-900 text-xs transition-all flex items-start gap-3">
+<span class="w-5 h-5 rounded bg-slate-800 text-slate-400 flex items-center justify-center font-bold text-[10px] mt-0.5">B</span>
+<span class="text-slate-300">"Compreendo a sua preocupação, D.ª Francisca. Mas, fisicamente, quanto mais fina a mama ficar sob compressão, menos radiação precisamos para a atravessar. Isso reduz a sua dose e evita que a imagem fique desfocada!"</span>
+</button>
+<button onclick="chooseDialogue(1, 2)" class="w-full text-left p-3 rounded-xl border border-slate-800 hover:border-rose-500/50 hover:bg-slate-900 text-xs transition-all flex items-start gap-3">
+<span class="w-5 h-5 rounded bg-slate-800 text-slate-400 flex items-center justify-center font-bold text-[10px] mt-0.5">C</span>
+<span class="text-slate-300">"Se não apertarmos a mama, a radiação espalhada vai queimar o sensor e a imagem ficará totalmente branca. A dor é chata, mas é necessária para a física funcionar."</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- FASE 2: ALTURA DO MAMÓGRAFO -->
+<div id="phase-2" class="phase-container hidden space-y-6">
+<div class="border-b border-slate-800 pb-3">
+<span class="text-xs font-bold uppercase tracking-wider text-rose-500">Etapa 2: Altura do Recetor de Imagem</span>
+<h2 class="text-base font-bold text-white mt-1">Ajusta o Mamógrafo à Altura da Paciente</h2>
+<p class="text-[11px] text-slate-400 mt-1">A bandeja de suporte deve ficar alinhada exatamente com o sulco inframamário (onde a mama se une ao abdómen).</p>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+<!-- Simulador Visual do Aparelho (SVG) -->
+<div class="md:col-span-7 bg-slate-900/30 p-4 rounded-2xl border border-slate-800 flex items-center justify-center min-h-[250px]">
+<svg class="w-full max-w-[280px] h-auto" viewBox="0 0 200 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+<!-- Coluna do Mamógrafo -->
+<rect x="30" y="10" width="20" height="220" fill="#1e293b" />
+<rect x="25" y="220" width="30" height="10" fill="#334155" />
+
+<!-- Corpo Móvel do Mamógrafo (Sobe e Desce) -->
+<g id="svg-movable-gantry" transform="translate(0, 50)">
+<!-- Tubo de Raios-X Superior -->
+<rect x="50" y="0" width="60" height="25" rx="3" fill="#475569" />
+<rect x="70" y="25" width="20" height="10" fill="#cbd5e1" />
+
+<!-- Prato de Compressão móvel -->
+<line x1="50" y1="50" x2="130" y2="50" stroke="#38bdf8" stroke-width="3" />
+
+<!-- Bandeja de Suporte / Recetor de Imagem (Bucky) -->
+<rect x="50" y="90" width="80" height="15" rx="2" fill="#0f172a" stroke="#64748b" stroke-width="1.5" />
+<text x="65" y="101" fill="#38bdf8" font-size="7" font-family="monospace">RECEPTOR</text>
+</g>
+
+<!-- Paciente em corte simplificado (Fixa) -->
+<g id="svg-patient-profile">
+<!-- Tronco / Peito -->
+<path d="M 170 30 L 170 120 C 170 120, 165 120, 160 120 C 145 120, 130 135, 130 145 C 130 155, 145 160, 160 160 L 170 160 L 170 230" stroke="#f43f5e" stroke-width="3" fill="none" />
+<!-- Linha Guia do Sulco Inframamário -->
+<line x1="120" y1="160" x2="180" y2="160" stroke="#10b981" stroke-width="1" stroke-dasharray="2 2" />
+<text x="145" y="172" fill="#10b981" font-size="7">Sulco Alvo</text>
+</g>
+</svg>
+</div>
+
+<!-- Controles para Mover -->
+<div class="md:col-span-5 space-y-4">
+<span class="text-xs text-slate-400 font-semibold block">Ajusta a altura da bandeja de receção:</span>
+
+<div class="flex gap-2">
+<button onclick="moveGantry('up')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 rounded-xl text-xs transition-all">
+<i class="fa-solid fa-arrow-up mr-1.5 text-rose-500"></i> Subir Tubo
+</button>
+<button onclick="moveGantry('down')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 rounded-xl text-xs transition-all">
+<i class="fa-solid fa-arrow-down mr-1.5 text-rose-500"></i> Descer Tubo
+</button>
+</div>
+
+<div class="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800 text-[11px] text-slate-400">
+<strong>Dica da Física:</strong> Um posicionamento demasiado baixo puxa a paciente e estica o peito, gerando dobras na pele que simulam nódulos falsos. Um posicionamento muito alto impede a visualização da parte profunda da glândula mamária.
+</div>
+
+<button onclick="confirmHeight()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-extrabold py-3 rounded-xl text-xs transition-all shadow-lg shadow-rose-600/25">
+CONFIRMAR ALTURA DA BANDEJA
+</button>
+</div>
+</div>
+</div>
+
+<!-- FASE 3: ALINHAMENTO DA MAMA (PUXAR O TECIDO) -->
+<div id="phase-3" class="phase-container hidden space-y-6">
+<div class="border-b border-slate-800 pb-3">
+<span class="text-xs font-bold uppercase tracking-wider text-rose-500">Etapa 3: Alinhamento e Tração da Mama</span>
+<h2 class="text-base font-bold text-white mt-1">Traciona a Mama e Centraliza o Mamilo</h2>
+<p class="text-[11px] text-slate-400 mt-1">É necessário puxar a mama ativamente para fora do peito para incluir todo o tecido glandular e garantir que o mamilo está de perfil (sem rotação).</p>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+<!-- Visualização da Mama por Cima (CC) -->
+<div class="md:col-span-7 bg-slate-900/30 p-4 rounded-2xl border border-slate-800 flex items-center justify-center min-h-[250px]">
+<svg class="w-full max-w-[280px] h-auto" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+<!-- Bandeja inferior Bucky -->
+<rect x="30" y="40" width="140" height="120" rx="3" fill="#1e293b" stroke="#475569" />
+
+<!-- Mama Vista de Cima (Dinâmica com sliders) -->
+<!-- Centro de rotação do mamilo e tração -->
+<path id="svg-breast-topview" d="M 30 100 C 60 100, 110 80, 110 100 C 110 120, 60 100, 30 100" fill="#fda4af" fill-opacity="0.75" stroke="#f43f5e" stroke-width="2" />
+<circle id="svg-nipple-topview" cx="110" cy="100" r="4" fill="#e11d48" />
+
+<text x="35" y="52" fill="#38bdf8" font-size="7" font-family="monospace">DETECTOR DIGITAL</text>
+<text x="45" y="152" fill="#94a3b8" font-size="6" font-family="monospace">LADO DA PAREDE TORÁCICA</text>
+</svg>
+</div>
+
+<!-- Controles de Tração -->
+<div class="md:col-span-5 space-y-4">
+<span class="text-xs text-slate-400 font-semibold block">Ajustes manuais de posicionamento:</span>
+
+<!-- Tração (Puxar) -->
+<div class="space-y-1.5">
+<div class="flex justify-between text-xs">
+<span class="text-slate-300">Tração do tecido:</span>
+<span id="label-traction" class="font-bold text-rose-400">Insuficiente</span>
+</div>
+<input type="range" id="val-traction" min="0" max="10" value="2" oninput="updateTraction()" class="w-full accent-rose-500 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+</div>
+
+<!-- Rotação do Mamilo -->
+<div class="space-y-1.5">
+<div class="flex justify-between text-xs">
+<span class="text-slate-300">Alinhamento do Mamilo:</span>
+<span id="label-nipple" class="font-bold text-rose-400">Fora de Perfil</span>
+</div>
+<input type="range" id="val-nipple" min="-20" max="20" value="-15" oninput="updateTraction()" class="w-full accent-rose-500 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+</div>
+
+<button onclick="confirmPosition()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-extrabold py-3 rounded-xl text-xs transition-all shadow-lg shadow-rose-600/25">
+CONFIRMAR TRAÇÃO E ALINHAMENTO
+</button>
+</div>
+</div>
+</div>
+
+<!-- FASE 4: COMPRESSÃO DE TECIDO -->
+<div id="phase-4" class="phase-container hidden space-y-6">
+<div class="border-b border-slate-800 pb-3">
+<span class="text-xs font-bold uppercase tracking-wider text-rose-500">Etapa 4: Compressão Física Gradual</span>
+<h2 class="text-base font-bold text-white mt-1">Controla a Força do Compressor</h2>
+<p class="text-[11px] text-slate-400 mt-1">Clica no pedal para descer o compressor. O objetivo é atingir a força ideal (8-14 daN) para reduzir a espessura da mama.</p>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+<!-- Desenho em Perfil da Compressão -->
+<div class="md:col-span-7 bg-slate-900/30 p-4 rounded-2xl border border-slate-800 flex items-center justify-center min-h-[250px] relative">
+<svg class="w-full max-w-[280px] h-auto" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+<!-- Bucky de suporte fixo -->
+<rect x="30" y="150" width="140" height="20" fill="#1e293b" />
+
+<!-- Prato de Compressão móvel (Move-se com o valor) -->
+<g id="svg-compressor-plate-p4" transform="translate(0, 50)">
+<rect x="35" y="0" width="130" height="8" fill="#38bdf8" fill-opacity="0.6" stroke="#0284c7" />
+<line x1="100" y1="-50" x2="100" y2="0" stroke="#475569" stroke-width="2" stroke-dasharray="2 2" />
+</g>
+
+<!-- Perfil da Mama em deformação -->
+<path id="svg-breast-profile-p4" d="M 30 150 C 130 150, 160 80, 160 110 C 160 140, 130 150, 30 150" fill="#fda4af" fill-opacity="0.75" stroke="#f43f5e" stroke-width="2" />
+</svg>
+
+<!-- Indicador flutuante de Dor/Comfort da Paciente -->
+<div class="absolute top-4 right-4 bg-slate-950/80 border border-slate-800 p-2.5 rounded-xl text-center">
+<span class="text-[9px] uppercase font-bold text-slate-500 block">Reação</span>
+<span id="patient-reaction-face" class="text-3xl">😊</span>
+<span id="patient-reaction-desc" class="text-[9px] text-emerald-400 block font-semibold mt-1">Confortável</span>
+</div>
+</div>
+
+<!-- Controles do Pedal -->
+<div class="md:col-span-5 space-y-4">
+<div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 text-center space-y-2">
+<span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Instrumento do Mamógrafo: Força Aplicada</span>
+<span id="gauge-compression" class="text-4xl font-extrabold text-amber-400 font-mono-custom">0 daN</span>
+<p class="text-[10px] text-slate-500">Espessura atual da mama: <span id="gauge-thickness" class="font-bold text-white">6.0 cm</span></p>
+</div>
+
+<!-- Botão de Compressão Manual de Toque Continuo -->
+<div class="flex gap-2">
+<button onclick="applyCompressionStep()" class="flex-grow bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold py-4 rounded-xl text-xs tracking-wider transition-all shadow-lg shadow-amber-500/10 active:scale-95">
+<i class="fa-solid fa-compress mr-1.5"></i> CALCAL PEDAL (COMPRIMIR)
+</button>
+<button onclick="resetCompression()" class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 rounded-xl text-xs transition-all" title="Aliviar compressão">
+<i class="fa-solid fa-rotate-left"></i>
+</button>
+</div>
+
+<button onclick="confirmCompression()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-extrabold py-3 rounded-xl text-xs transition-all shadow-lg shadow-rose-600/25">
+CONFIRMAR COMPRESSÃO ALCANÇADA
+</button>
+</div>
+</div>
+</div>
+
+<!-- FASE 5: CONSOLA DE DISPARO E PROTEÇÃO -->
+<div id="phase-5" class="phase-container hidden space-y-6">
+<div class="border-b border-slate-800 pb-3">
+<span class="text-xs font-bold uppercase tracking-wider text-rose-500">Etapa 5: Consola de Comandos e Radioproteção</span>
+<h2 class="text-base font-bold text-white mt-1">Ajusta as Variáveis Físicas e Aplica Segurança</h2>
+<p class="text-[11px] text-slate-400 mt-1">Programa o espetro de radiação ideal e coloca-te em segurança atrás do biombo protetor antes de emitir radiação.</p>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+<!-- Simulador de Painel de Controlo de Raios-X -->
+<div class="md:col-span-7 bg-slate-950 border-2 border-slate-900 rounded-2xl p-4 space-y-4 shadow-inner">
+<div class="flex items-center gap-2 border-b border-slate-900 pb-2">
+<span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+<span class="text-[10px] text-slate-400 font-bold uppercase font-mono-custom">Painel Digital Siemens Mammomat</span>
+</div>
+
+<div class="grid grid-cols-2 gap-4">
+<!-- kVp -->
+<div class="space-y-1.5 bg-slate-900/40 p-2.5 rounded-xl border border-slate-900">
+<div class="flex justify-between text-xs">
+<span class="text-slate-400 font-semibold">Tensão:</span>
+<span id="p5-label-kvp" class="font-bold text-rose-400 font-mono-custom">28 kVp</span>
+</div>
+<input type="range" id="p5-val-kvp" min="23" max="35" value="28" oninput="updateConsoleParameters()" class="w-full accent-rose-500 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+</div>
+
+<!-- mAs -->
+<div class="space-y-1.5 bg-slate-900/40 p-2.5 rounded-xl border border-slate-900">
+<div class="flex justify-between text-xs">
+<span class="text-slate-400 font-semibold">Carga:</span>
+<span id="p5-label-mas" class="font-bold text-rose-400 font-mono-custom">80 mAs</span>
+</div>
+<input type="range" id="p5-val-mas" min="10" max="250" value="80" step="5" oninput="updateConsoleParameters()" class="w-full accent-rose-500 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+</div>
+</div>
+
+<!-- Filtração Física -->
+<div class="space-y-1.5">
+<span class="text-xs font-semibold text-slate-400 block">Material Ânodo / Filtro:</span>
+<select id="p5-val-filter" onchange="updateConsoleParameters()" class="w-full bg-slate-900 border border-slate-800 text-slate-200 text-xs rounded-xl p-2.5 focus:border-rose-500 outline-none">
+<option value="Mo/Mo">Mo/Mo (Molibdénio) - Ideal para Mamas Gordurosas</option>
+<option value="Mo/Rh">Mo/Rh (Ródio) - Indicado para Mamas Mistas</option>
+<option value="W/Rh">W/Rh (Tungsténio/Digital) - Indicado para Mamas Densas</option>
+</select>
+</div>
+
+<!-- Estado da Barreira de Segurança -->
+<div class="bg-slate-900/80 p-3 rounded-xl flex items-center justify-between border border-slate-800">
+<div>
+<span class="text-[9px] uppercase font-bold text-slate-500 block">Posição do Tecnólogo</span>
+<strong id="safety-status-label" class="text-rose-500 text-xs">Junto ao Mamógrafo (PERIGO!)</strong>
+</div>
+<button onclick="toggleSafetyBarrier()" id="safety-btn" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-3 rounded-xl text-[11px] transition-all">
+<i class="fa-solid fa-shield-halved mr-1"></i> Ir para trás do Biombo
+</button>
+</div>
+</div>
+
+<!-- Botão de Disparo Gigante de Exposição -->
+<div class="md:col-span-5 flex flex-col justify-center gap-4">
+<div class="bg-slate-900/30 p-4 rounded-2xl border border-slate-800 text-center space-y-2">
+<i class="fa-solid fa-circle-radiation text-4xl text-rose-500 animate-pulse"></i>
+<h4 class="text-xs font-bold text-white uppercase tracking-wider">Disparo do Feixe</h4>
+<p class="text-[10px] text-slate-500">Apenas dispara quando o painel estiver devidamente configurado e a barreira de proteção estiver ativa.</p>
+</div>
+
+<button onclick="triggerExposure()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-extrabold py-4 rounded-2xl text-xs tracking-wider transition-all shadow-lg shadow-rose-600/30 active:scale-95 flex items-center justify-center gap-2">
+<i class="fa-solid fa-bolt"></i> EFETUAR EXPOSIÇÃO (DISPARAR)
+</button>
+</div>
+</div>
+</div>
+
+<!-- FASE 6: DIAGNÓSTICO CLÍNICO (RESULTADO) -->
+<div id="phase-6" class="phase-container hidden space-y-6">
+<div class="border-b border-slate-800 pb-3">
+<span class="text-xs font-bold uppercase tracking-wider text-rose-500">Etapa 6: Controle de Qualidade e Diagnóstico</span>
+<h2 class="text-base font-bold text-white mt-1">Analisa a Imagem do Negatoscópio</h2>
+<p class="text-[11px] text-slate-400 mt-1">Se os parâmetros de física estiverem corretos, deves conseguir ver as lesões e as microcalcificações.</p>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+<!-- Ecrã de Visualização Clínico -->
+<div class="md:col-span-7 bg-slate-950 border-2 border-slate-900 rounded-2xl p-4 flex flex-col items-center relative">
+<span class="absolute top-2 left-4 text-[9px] text-slate-400 font-mono-custom uppercase tracking-wider">Monitor Radiológico Hospitalar (5MP)</span>
+
+<div class="w-full max-w-[280px] aspect-[3/4] bg-black border border-slate-800 rounded-lg overflow-hidden my-4">
+<canvas id="mammogram-canvas-p6" class="w-full h-full block bg-black"></canvas>
+</div>
+</div>
+
+<!-- Encontrar Lesões / Diagnóstico -->
+<div class="md:col-span-5 space-y-4">
+<div class="bg-slate-900/40 p-4 rounded-2xl border border-slate-800 space-y-3">
+<h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+<i class="fa-solid fa-microscope text-rose-500"></i> Relatório Físico-Clínico
+</h3>
+<div class="space-y-1.5 text-xs text-slate-300">
+<div class="flex justify-between">
+<span>Contraste da Imagem:</span>
+<strong id="final-contrast" class="text-white">---</strong>
+</div>
+<div class="flex justify-between">
+<span>Ruído de Fundo (Grão):</span>
+<strong id="final-noise" class="text-white">---</strong>
+</div>
+<div class="flex justify-between border-t border-slate-800 pt-1.5">
+<span>Dose Glandular Média (MGD):</span>
+<strong id="final-mgd" class="text-white">---</strong>
+</div>
+</div>
+</div>
+
+<!-- Pergunta Diagnóstica final -->
+<div class="space-y-2">
+<span class="text-xs text-slate-400 font-semibold block">O que detetas na imagem processada?</span>
+<div class="grid grid-cols-1 gap-2">
+<button onclick="selectDiagnosis(true)" class="p-3 rounded-xl border border-slate-800 hover:border-emerald-500/50 hover:bg-slate-900 text-xs font-bold text-left transition-all flex items-center gap-2">
+<i class="fa-solid fa-circle-dot text-emerald-400 text-sm"></i>
+Deteto um Nódulo Espiculado e Microcalcificações.
+</button>
+<button onclick="selectDiagnosis(false)" class="p-3 rounded-xl border border-slate-800 hover:border-rose-500/50 hover:bg-slate-900 text-xs font-bold text-left transition-all flex items-center gap-2">
+<i class="fa-solid fa-ban text-rose-400 text-sm"></i>
+Não deteto lesões (Exame Normal).
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- BARRA DE PROGRESSO DE FLUXO -->
+<div class="border-t border-slate-900 pt-4 mt-6 flex justify-between items-center text-xs">
+<span class="text-slate-500 font-mono-custom">Paciente atual: <strong id="footer-patient-name" class="text-white">D.ª Francisca</strong></span>
+<div class="flex items-center gap-4">
+<span id="flow-percentage" class="text-slate-400 font-mono-custom">16% Concluído</span>
+<div class="w-24 bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800">
+<div id="flow-progress-bar" class="bg-rose-500 h-full rounded-full progress-bar" style="width: 16%"></div>
+</div>
+</div>
+</div>
+
+</div>
+</main>
+
+<!-- Rodapé -->
+<footer class="bg-slate-950 border-t border-slate-900 py-3 px-6 text-center text-[10px] text-slate-600">
+<p>&copy; 2026 MamoPractice Academy. Concebido para educação de Tecnólogos de Radiologia e Físicos Médicos.</p>
+</footer>
+
+<!-- LÓGICA E SCRIPT DO JOGO -->
+<script>
+// --- BASE DE DADOS DOS CASOS CLÍNICOS ---
+const patients = [
+{
+id: 0,
+name: "D.ª Francisca",
+emoji: "👩‍🦳",
+desc: "Muito cooperante, mas tem medo da dor da compressão.",
+density: "gordurosa",
+densityLabel: "Mama Adiposa (Mais Fácil)",
+baseThickness: 5.5,
+targetKvp: 25,
+targetFilter: "Mo/Mo",
+tumorPosition: { x: 170, y: 150 },
+calcifications: [
+{ x: 175, y: 140, r: 1.5 },
+{ x: 165, y: 155, r: 1.2 },
+{ x: 180, y: 158, r: 1.0 }
+]
+},
+{
+id: 1,
+name: "D.ª Cláudia",
+emoji: "👩",
+desc: "Jovem, muito ansiosa e com dores severas de ciclo hormonal.",
+density: "densa",
+densityLabel: "Mama Extremamente Densa",
+baseThickness: 4.8,
+targetKvp: 31,
+targetFilter: "W/Rh",
+tumorPosition: { x: 140, y: 130 },
+calcifications: [
+{ x: 145, y: 120, r: 1.6 },
+{ x: 135, y: 135, r: 1.3 },
+{ x: 150, y: 138, r: 1.1 }
+]
+}
+];
+
+let activePatientIdx = 0;
+let currentPhase = 1; // 1 a 6
+
+// Variáveis de Performance
+let scoreXP = 0;
+let errorsCount = 0;
+let levelRank = "Estudante";
+
+// Parâmetros Físicos Atuais modificados pelo jogador
+let currentGantryHeight = 10; // offset em pixels
+let currentTraction = 2; // de 0 a 10
+let currentNippleAlignment = -15; // de -20 a 20
+let currentCompression = 0; // daN (Força)
+let consoleKvp = 28;
+let consoleMas = 80;
+let consoleFilter = "Mo/Mo";
+let safetyBarrierActive = false;
+
+// Elementos do DOM
+let gantryMovable;
+let canvasP6;
+let ctxP6;
+
+// --- SISTEMA DE NAVEGAÇÃO DE FASES E FLUXO ---
+function setPhase(phaseNum) {
+currentPhase = phaseNum;
+
+// Ocultar todas as divs de fase
+document.querySelectorAll(".phase-container").forEach(el => el.classList.add("hidden"));
+// Mostrar fase ativa
+document.getElementById(`phase-${phaseNum}`).classList.remove("hidden");
+
+// Atualizar barra de progresso lateral
+document.querySelectorAll(".step-card").forEach((card, idx) => {
+const stepNum = idx + 1;
+if (stepNum === phaseNum) {
+card.className = "step-card flex items-center gap-3 p-2.5 rounded-xl border border-rose-500 bg-rose-500/10 text-rose-400 text-xs font-semibold";
+card.querySelector("span").className = "w-6 h-6 rounded-lg bg-rose-600 text-white flex items-center justify-center font-bold text-[10px]";
+} else if (stepNum < phaseNum) {
+card.className = "step-card flex items-center gap-3 p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 text-emerald-400 text-xs font-semibold";
+card.querySelector("span").className = "w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-[10px]";
+} else {
+card.className = "step-card flex items-center gap-3 p-2.5 rounded-xl border border-slate-900 text-slate-500 text-xs font-semibold";
+card.querySelector("span").className = "w-6 h-6 rounded-lg bg-slate-900 text-slate-600 flex items-center justify-center font-bold text-[10px]";
+}
+});
+
+// Atualizar barra de progresso inferior
+const percentage = Math.round((phaseNum / 6) * 100);
+document.getElementById("flow-percentage").innerText = `${percentage}% Concluído`;
+document.getElementById("flow-progress-bar").style.width = `${percentage}%`;
+
+// Diálogos específicos da Físico Clara por etapa
+if (phaseNum === 2) {
+updateTutor("Muito bem! Agora ajusta a altura da bandeja. O truque clínico é colocá-la ao nível do sulco mamário inferior da paciente para evitar pregas na pele.");
+} else if (phaseNum === 3) {
+updateTraction();
+updateTutor("Excelente. O posicionamento CC exige que puxes a mama para cima e para a frente do detector e verifiques se o mamilo está perfeitamente centrado.");
+} else if (phaseNum === 4) {
+resetCompression();
+updateTutor("Hora da compressão física. Clica no pedal de forma progressiva. Para a D.ª Francisca, o ideal situa-se entre os 8 e os 14 daN de força. Evita dor excessiva!");
+} else if (phaseNum === 5) {
+updateConsoleParameters();
+updateTutor("Excelente compressão! Agora estamos na consola de comandos. Ajusta o kVp, mAs e Filtro. Não te esqueças de ir para trás da barreira protetora!");
+} else if (phaseNum === 6) {
+processFinalImage();
+updateTutor("A imagem foi adquirida e processada digitalmente. Analisa o negatoscópio e diagnostica se encontras alguma anomalia mamográfica!");
+}
+}
+
+function updateTutor(msg) {
+document.getElementById("tutor-text").innerText = msg;
+}
+
+// --- SISTEMA DE DIÁLOGO E RECONHECIMENTO (FASE 1) ---
+function chooseDialogue(phase, idx) {
+if (idx === 1) { // Opção B correta
+awardXP(100);
+showModal(
+"Tranquilização Com Sucesso!",
+"Excelente atitude clínica! Explicar o princípio físico da redução da espessura mamária (menos tecido = menos atenuação = menor mAs e dose necessária) ganha a confiança da paciente.",
+"success",
+() => { setPhase(2); }
+);
+} else {
+addError();
+showModal(
+"Explicação Insatisfatória",
+"A paciente continua ansiosa e com medo. Dizer apenas que 'são regras' ou que 'vai queimar o sensor' não transmite confiança profissional nem rigor científico.",
+"error",
+() => { setPhase(2); }
+);
+}
+}
+
+// --- SISTEMA DE MOVIMENTO DO GANTRY (FASE 2) ---
+function moveGantry(dir) {
+if (dir === 'up') {
+currentGantryHeight = Math.max(0, currentGantryHeight - 3);
+} else {
+currentGantryHeight = Math.min(30, currentGantryHeight + 3);
+}
+if (gantryMovable) {
+gantryMovable.setAttribute("transform", `translate(0, ${currentGantryHeight + 30})`);
+}
+}
+
+function confirmHeight() {
+// A altura correta está em torno de offset 15px (alinhado com o sulco mamário y=160)
+const deviation = Math.abs(currentGantryHeight - 15);
+if (deviation <= 4) {
+awardXP(150);
+showModal(
+"Altura Otimizada!",
+"A bandeja do mamógrafo está perfeitamente alinhada com o sulco inframamário. Isto assegura que não há trações anormais que simulem nódulos.",
+"success",
+() => { setPhase(3); }
+);
+} else {
+addError();
+showModal(
+"Desalinhamento Mecânico",
+"A bandeja está demasiado alta ou baixa. Isto vai causar dobras cutâneas ou puxar a paciente de forma desconfortável durante o exame.",
+"error",
+() => { setPhase(3); }
+);
+}
+}
+
+// --- SISTEMA DE TRAÇÃO E ALINHAMENTO DA MAMA (FASE 3) ---
+function updateTraction() {
+currentTraction = parseInt(document.getElementById("val-traction").value);
+currentNippleAlignment = parseInt(document.getElementById("val-nipple").value);
+
+// Deformação dinâmica do SVG da mama superior
+const widthOffset = currentTraction * 5;
+const alignOffset = currentNippleAlignment;
+
+const breastPath = document.getElementById("svg-breast-topview");
+const nippleCircle = document.getElementById("svg-nipple-topview");
+
+if (breastPath && nippleCircle) {
+// Atualizar coordenadas do desenho SVG da mama vista de cima
+breastPath.setAttribute("d", `M 30 100 C 60 100, ${110 + widthOffset} ${100 + alignOffset}, ${110 + widthOffset} 100 C ${110 + widthOffset} 100, 60 100, 30 100`);
+nippleCircle.setAttribute("cx", 110 + widthOffset);
+nippleCircle.setAttribute("cy", 100 + alignOffset);
+}
+
+// Atualizar etiquetas
+const labelTraction = document.getElementById("label-traction");
+if (labelTraction) {
+if (currentTraction > 7) {
+labelTraction.innerText = "Excelente (Puxada)";
+labelTraction.className = "font-bold text-emerald-400";
+} else if (currentTraction > 4) {
+labelTraction.innerText = "Moderada";
+labelTraction.className = "font-bold text-amber-400";
+} else {
+labelTraction.innerText = "Insuficiente";
+labelTraction.className = "font-bold text-rose-500";
+}
+}
+
+const labelNipple = document.getElementById("label-nipple");
+if (labelNipple) {
+if (Math.abs(currentNippleAlignment) <= 3) {
+labelNipple.innerText = "Em Perfil (Correto)";
+labelNipple.className = "font-bold text-emerald-400";
+} else {
+labelNipple.innerText = "Fora de Perfil (Incorreto)";
+labelNipple.className = "font-bold text-rose-500";
+}
+}
+}
+
+function confirmPosition() {
+if (currentTraction > 7 && Math.abs(currentNippleAlignment) <= 3) {
+awardXP(150);
+showModal(
+"Excelente Posicionamento!",
+"Conseguiste tracionar a mama de forma a abranger todo o tecido glandular e mantiveste o mamilo de perfil. Isto evita falsos diagnósticos no tecido periareolar.",
+"success",
+() => { setPhase(4); }
+);
+} else {
+addError();
+showModal(
+"Falha de Posicionamento",
+"A mama não foi tracionada o suficiente ou o mamilo ficou rodado. Isto pode ocultar cancro ou criar sombras de sobreposição.",
+"error",
+() => { setPhase(4); }
+);
+}
+}
+
+// --- SISTEMA DE COMPRESSÃO CONTROLADA (FASE 4) ---
+function applyCompressionStep() {
+if (currentCompression < 20) {
+currentCompression += 1;
+updateCompressionDisplay();
+}
+}
+
+function resetCompression() {
+currentCompression = 0;
+updateCompressionDisplay();
+}
+
+function updateCompressionDisplay() {
+document.getElementById("gauge-compression").innerText = `${currentCompression} daN`;
+
+// Altura / espessura da mama em cm decresce dinamicamente
+const p = patients[activePatientIdx];
+const currentThick = Math.max(1.8, p.baseThickness - (currentCompression * 0.18));
+document.getElementById("gauge-thickness").innerText = `${currentThick.toFixed(1)} cm`;
+
+// Deformação dinâmica no SVG da mama em perfil
+const compressorY = 50 + (currentCompression * 4);
+const compressorPlate = document.getElementById("svg-compressor-plate-p4");
+const breastProfile = document.getElementById("svg-breast-profile-p4");
+
+if (compressorPlate) {
+compressorPlate.setAttribute("transform", `translate(0, ${compressorY})`);
+}
+
+if (breastProfile) {
+const breastHeight = 150 - compressorY;
+const controlPointY = compressorY + (breastHeight / 2);
+breastProfile.setAttribute("d", `M 30 150 C 130 150, 160 ${controlPointY}, 160 ${compressorY} C 160 ${compressorY}, 130 ${compressorY}, 30 ${compressorY}`);
+}
+
+// Alterar reação da paciente de acordo com a compressão exercida
+const face = document.getElementById("patient-reaction-face");
+const desc = document.getElementById("patient-reaction-desc");
+
+if (face && desc) {
+if (currentCompression <= 4) {
+face.innerText = "😊";
+desc.innerText = "Sem Dor";
+desc.className = "text-[9px] text-emerald-400 block font-semibold mt-1";
+} else if (currentCompression <= 7) {
+face.innerText = "😐";
+desc.innerText = "Pressão Ligeira";
+desc.className = "text-[9px] text-amber-400 block font-semibold mt-1";
+} else if (currentCompression <= 14) {
+face.innerText = "😣";
+desc.innerText = "Desconfortável (Suportável)";
+desc.className = "text-[9px] text-emerald-400 block font-semibold mt-1";
+} else if (currentCompression <= 17) {
+face.innerText = "😫";
+desc.innerText = "Dor Forte";
+desc.className = "text-[9px] text-orange-500 block font-semibold mt-1";
+} else {
+face.innerText = "😭";
+desc.innerText = "Dor Extrema / Traumatismo";
+desc.className = "text-[9px] text-rose-500 block font-bold mt-1";
+}
+}
+}
+
+function confirmCompression() {
+if (currentCompression >= 8 && currentCompression <= 14) {
+awardXP(200);
+showModal(
+"Compressão Perfeita!",
+"Alcançaste a força ideal (8-14 daN). Isto reduz o espalhamento Compton, imobiliza a mama e garante a menor espessura necessária para o feixe passar.",
+"success",
+() => { setPhase(5); }
+);
+} else if (currentCompression < 8) {
+addError();
+showModal(
+"Compressão Insuficiente",
+"A mama ficou demasiado espessa. Isto vai exigir mais mAs (mais radiação) e criar radiação espalhada que destrói o contraste da imagem.",
+"error",
+() => { setPhase(5); }
+);
+} else {
+addError();
+showModal(
+"Pressão Excessiva!",
+"Força de compressão abusiva! Causaste dor extrema e possível lesão mecânica na paciente desnecessariamente.",
+"error",
+() => { setPhase(5); }
+);
+}
+}
+
+// --- SISTEMA DA CONSOLA E PROTEÇÃO (FASE 5) ---
+function updateConsoleParameters() {
+consoleKvp = parseInt(document.getElementById("p5-val-kvp").value);
+consoleMas = parseInt(document.getElementById("p5-val-mas").value);
+consoleFilter = document.getElementById("p5-val-filter").value;
+
+document.getElementById("p5-label-kvp").innerText = `${consoleKvp} kVp`;
+document.getElementById("p5-label-mas").innerText = `${consoleMas} mAs`;
+}
+
+function toggleSafetyBarrier() {
+safetyBarrierActive = !safetyBarrierActive;
+const btn = document.getElementById("safety-btn");
+const label = document.getElementById("safety-status-label");
+
+if (safetyBarrierActive) {
+btn.className = "bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-xl text-[11px] transition-all";
+btn.innerHTML = `<i class="fa-solid fa-user-shield mr-1"></i> Sair de trás do biombo`;
+label.innerText = "Atrás da Barreira de Chumbo";
+label.className = "text-emerald-400 text-xs font-bold";
+} else {
+btn.className = "bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-3 rounded-xl text-[11px] transition-all";
+btn.innerHTML = `<i class="fa-solid fa-shield-halved mr-1"></i> Ir para trás do Biombo`;
+label.innerText = "Junto ao Mamógrafo (PERIGO!)";
+label.className = "text-rose-500 text-xs font-bold";
+}
+}
+
+function triggerExposure() {
+if (!safetyBarrierActive) {
+addError();
+showModal(
+"Violação de Segurança!",
+"PERIGO CRÍTICO: Disparaste raios-X sem estares protegido pela barreira de vidro plumbífero. Recebeste radiação dispersa no teu corpo!",
+"error",
+null
+);
+return;
+}
+
+// Efeito visual de radiação no ecrã
+const arena = document.getElementById("game-arena");
+arena.classList.add("radiation-flash");
+
+setTimeout(() => {
+arena.classList.remove("radiation-flash");
+showModal(
+"Exposição Efetuada com Sucesso!",
+"Os raios-X penetraram a mama e foram captados pelo detector digital. Vamos agora ao negatoscópio analisar a imagem obtida.",
+"success",
+() => { setPhase(6); }
+);
+}, 1200);
+}
+
+// --- SISTEMA DE DIAGNÓSTICO (FASE 6) ---
+function processFinalImage() {
+const p = patients[activePatientIdx];
+
+// Fatores de qualidade baseados na física das escolhas do jogador
+let noise = 30 / Math.sqrt(consoleMas); // Menor mAs = Mais ruído quântico (grain)
+let contrast = 120 - (consoleKvp - 23) * 6.5; // Maior kVp = Menor contraste
+
+// Se a compressão foi fraca, o espalhamento Compton destrói o contraste
+if (currentCompression < 8) {
+contrast -= 30;
+}
+
+// MGD (Dose Glandular Média) calculada
+const finalThickness = Math.max(1.8, p.baseThickness - (currentCompression * 0.18));
+let filterFactor = consoleFilter === 'W/Rh' ? 0.6 : consoleFilter === 'Mo/Rh' ? 0.8 : 1.0;
+let doseMGD = filterFactor * (consoleMas * 0.007) * Math.pow(consoleKvp / 26, 2.4) * Math.pow(finalThickness / 4.5, 1.2);
+doseMGD = parseFloat(Math.max(0.01, doseMGD).toFixed(2));
+
+// Renderização no Canvas da radiografia
+canvasP6.width = 280;
+canvasP6.height = 373;
+
+ctxP6.fillStyle = "#010204";
+ctxP6.fillRect(0, 0, canvasP6.width, canvasP6.height);
+
+// Silhueta da mama comprimida
+let grad = ctxP6.createRadialGradient(10, 186, 10, 10, 186, 120 + (currentCompression * 3));
+let br = Math.round(40 + (consoleKvp - 23) * 4);
+grad.addColorStop(0, `rgba(${br+90}, ${br+90}, ${br+90}, 0.6)`);
+grad.addColorStop(0.5, `rgba(${br+50}, ${br+50}, ${br+50}, 0.35)`);
+grad.addColorStop(0.9, `rgba(${br}, ${br}, ${br}, 0.1)`);
+grad.addColorStop(1, "rgba(0,0,0,0)");
+
+ctxP6.fillStyle = grad;
+ctxP6.beginPath();
+ctxP6.moveTo(0, 20);
+ctxP6.bezierCurveTo(180 + (currentCompression * 2), 20, 180 + (currentCompression * 2), 350, 0, 350);
+ctxP6.closePath();
+ctxP6.fill();
+
+// Renderizar Tumor se as condições físicas de contraste forem aceitáveis
+let tumorAlpha = (contrast / 130);
+tumorAlpha = Math.max(0.01, Math.min(0.9, tumorAlpha));
+
+ctxP6.fillStyle = `rgba(255, 255, 255, ${tumorAlpha * 0.6})`;
+ctxP6.beginPath();
+ctxP6.arc(p.tumorPosition.x, p.tumorPosition.y, 14, 0, Math.PI * 2);
+ctxP6.fill();
+
+// Renderizar microcalcificações se o ruído quântico não as ocultar
+let calcAlpha = (contrast / 130) - (noise / 10);
+calcAlpha = Math.max(0, Math.min(1.0, calcAlpha));
+
+if (calcAlpha > 0.15) {
+p.calcifications.forEach(c => {
+ctxP6.fillStyle = `rgba(255, 255, 255, ${calcAlpha})`;
+ctxP6.beginPath();
+ctxP6.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+ctxP6.fill();
+});
+}
+
+// Adicionar Efeito de Ruído Quântico no Canvas
+const imgData = ctxP6.getImageData(0, 0, canvasP6.width, canvasP6.height);
+const data = imgData.data;
+let noiseIntensity = noise * 3.5;
+
+for (let i = 0; i < data.length; i += 4) {
+if (data[i] > 5) {
+let r = (Math.random() - 0.5) * noiseIntensity;
+data[i] = Math.min(255, Math.max(0, data[i] + r));
+data[i+1] = Math.min(255, Math.max(0, data[i+1] + r));
+data[i+2] = Math.min(255, Math.max(0, data[i+2] + r));
+}
+}
+ctxP6.putImageData(imgData, 0, 0);
+
+// Atualizar relatório técnico de física na interface
+document.getElementById("final-contrast").innerText = contrast > 75 ? "Excelente (Fácil Detecção)" : contrast > 40 ? "Moderado" : "Pobre (Muito Cinza)";
+document.getElementById("final-noise").innerText = noise < 6 ? "Baixo (Limpo)" : noise < 12 ? "Médio" : "Elevado (Ruidoso)";
+
+const mgdEl = document.getElementById("final-mgd");
+mgdEl.innerText = `${doseMGD} mGy`;
+if (doseMGD > 3.0) {
+mgdEl.className = "text-rose-500 font-bold";
+} else {
+mgdEl.className = "text-emerald-400 font-bold";
+}
+}
+
+function selectDiagnosis(hasLessions) {
+const p = patients[activePatientIdx];
+
+// Avaliar se as escolhas de física do jogador tornaram o tumor detetável
+let contrast = 120 - (consoleKvp - 23) * 6.5;
+if (currentCompression < 8) contrast -= 30;
+let noise = 30 / Math.sqrt(consoleMas);
+let tumorVisible = (contrast / 130) > 0.45;
+let calcsVisible = (contrast / 130) - (noise / 10) > 0.35;
+
+// Dose e Segurança
+const finalThickness = Math.max(1.8, p.baseThickness - (currentCompression * 0.18));
+let filterFactor = consoleFilter === 'W/Rh' ? 0.6 : consoleFilter === 'Mo/Rh' ? 0.8 : 1.0;
+let doseMGD = filterFactor * (consoleMas * 0.007) * Math.pow(consoleKvp / 26, 2.4) * Math.pow(finalThickness / 4.5, 1.2);
+
+const isImageGood = tumorVisible && calcsVisible && (doseMGD <= 3.0);
+
+if (hasLessions && isImageGood) {
+awardXP(300);
+showModal(
+"Exame Concluído com Sucesso!",
+`Excelente laudo clínico! Conseguiste obter uma imagem diagnóstica limpa, visualizaste as calcificações minúsculas e o tumor com dose segura de ${doseMGD.toFixed(2)} mGy. Ganhaste XP!`,
+"success",
+() => { nextPatient(); }
+);
+} else if (hasLessions && !isImageGood) {
+addError();
+showModal(
+"Qualidade de Imagem Insuficiente",
+`Embora tenhas tentado marcar a opção correta, os teus ajustes físicos foram fracos. A imagem ficou tão desfocada ou ruidosa que um médico radiologista real não conseguiria confirmar estas lesões de forma segura.`,
+"error",
+() => { setPhase(4); }
+);
+} else {
+addError();
+showModal(
+"Falso Negativo (Grave!)",
+"Laudo clínico incorreto. A paciente tem um nódulo espiculado maligno que foi negligenciado. Precisas de ajustar os parâmetros para detetar as anomalias.",
+"error",
+() => { setPhase(4); }
+);
+}
+}
+
+function nextPatient() {
+activePatientIdx++;
+if (activePatientIdx >= patients.length) {
+// Fim de jogo com sucesso
+showModal(
+"Desafio Clínico Concluído!",
+`Parabéns! Concluíste o teu treino prático de física e mamografia. Pontuação final: ${scoreXP} XP. És agora um(a) Físico(a) e Tecnólogo(a) Sênior de excelência!`,
+"success",
+() => { scoreXP = 0; errorsCount = 0; activePatientIdx = 0; setPhase(1); updateHeaderStats(); }
+);
+} else {
+// Carregar nova paciente mais complexa
+const p = patients[activePatientIdx];
+document.getElementById("patient-name").innerText = p.name;
+document.getElementById("footer-patient-name").innerText = p.name;
+document.getElementById("patient-emoji").innerText = p.emoji;
+document.getElementById("patient-tag").innerText = p.densityLabel;
+document.getElementById("patient-desc").innerText = `"Disseram-me que o meu tipo de mama é difícil e denso. Conseguem encontrar alguma coisa?"`;
+
+// Resetar estados
+currentCompression = 0;
+currentGantryHeight = 10;
+safetyBarrierActive = false;
+
+setPhase(1);
+}
+}
+
+// --- SISTEMA DE ERROS, PONTUAÇÃO E MODAL ---
+function awardXP(amount) {
+scoreXP += amount;
+updateHeaderStats();
+}
+
+function addError() {
+errorsCount++;
+updateHeaderStats();
+if (errorsCount >= 3) {
+showModal(
+"Exame Cancelado por Insegurança",
+"Acumulaste 3 erros graves durante o exame (violações de radioproteção ou lesões de posicionamento mecânico na paciente). Repete o teu estágio!",
+"error",
+() => { scoreXP = 0; errorsCount = 0; activePatientIdx = 0; setPhase(1); updateHeaderStats(); }
+);
+}
+}
+
+function updateHeaderStats() {
+document.getElementById("score-display").innerText = `${scoreXP} XP`;
+document.getElementById("errors-display").innerText = `${errorsCount}/3`;
+
+const rankDisplay = document.getElementById("rank-display");
+if (scoreXP > 600) {
+levelRank = "Profissional Sênior";
+rankDisplay.className = "text-sm font-bold text-rose-500 animate-pulse";
+} else if (scoreXP > 300) {
+levelRank = "Residente Clínico";
+rankDisplay.className = "text-sm font-bold text-amber-400";
+} else {
+levelRank = "Estudante";
+rankDisplay.className = "text-sm font-bold text-teal-400";
+}
+rankDisplay.innerText = levelRank;
+}
+
+let modalCallback = null;
+
+function showModal(title, message, type, callback = null) {
+const modal = document.getElementById("custom-modal");
+const iconContainer = document.getElementById("modal-icon-container");
+const icon = document.getElementById("modal-icon");
+const titleEl = document.getElementById("modal-title");
+const messageEl = document.getElementById("modal-message");
+
+titleEl.innerText = title;
+messageEl.innerText = message;
+modalCallback = callback;
+
+if (type === 'success') {
+iconContainer

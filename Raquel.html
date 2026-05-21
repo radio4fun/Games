@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CTSim - Simulador Interativo de Tomografia Computadorizada</title>
+    <!-- Tailwind CSS para design moderno de UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons para ícones médicos e de controle -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Tone.js para efeitos sonoros em tempo real -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- Canvas Confetti para comemorações -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+       
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #080c14;
+            color: #f1f5f9;
+        }
+        .font-console {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Efeito de brilho de varredura laser do gantry */
+        .gantry-laser {
+            background: linear-gradient(180deg, rgba(239, 68, 68, 0) 0%, rgba(239, 68, 68, 0.8) 50%, rgba(239, 68, 68, 0) 100%);
+        }
+        /* Tela médica de visualização de tomografia (Negatoscópio de alta definição) */
+        .ct-viewport {
+            background-color: #000000;
+            border: 2px solid #334155;
+            box-shadow: inset 0 0 40px rgba(0, 0, 0, 1);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+    <!-- Cabeçalho Técnico -->
+    <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur-md px-6 py-4 shadow-xl">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-cyan-500 text-slate-950 p-2.5 rounded-xl shadow-lg shadow-cyan-500/20 animate-pulse">
+                    <i data-lucide="layers" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-100 tracking-tight flex items-center gap-2">
+                        CTSim <span class="text-[10px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-2.5 py-0.5 rounded-full font-console">MULTI-SLICE V3.0</span>
+                    </h1>
+                    <p class="text-xs text-slate-400 uppercase tracking-widest font-console">Radioproteção ALARA & Diagnóstico por Imagem</p>
+                </div>
+            </div>
+           
+            <div class="flex items-center gap-4">
+                <div class="bg-slate-950 border border-slate-800 px-4 py-2 rounded-xl text-xs font-console flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                    <span>Pontos de Carreira: <strong class="text-cyan-400 text-sm" id="score-val">0</strong> XP</span>
+                </div>
+                <div class="bg-slate-950 border border-slate-800 px-4 py-2 rounded-xl text-xs font-console flex items-center gap-2">
+                    <i data-lucide="shield" class="w-4 h-4 text-cyan-400"></i>
+                    <span>Dose Média: <strong class="text-emerald-400 text-sm" id="dose-avg-badge">Excelente</strong></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col justify-center">
+
+        <!-- TELA 1: INTRODUÇÃO E MANUAL DE TC -->
+        <div id="screen-intro" class="bg-slate-900/50 border border-slate-800 rounded-3xl p-8 md:p-12 max-w-3xl mx-auto text-center space-y-8 backdrop-blur-md shadow-2xl">
+            <div class="inline-flex p-5 bg-cyan-500/10 rounded-full text-cyan-400 border border-cyan-500/20 mb-2">
+                <i data-lucide="activity" class="w-16 h-16 animate-pulse"></i>
+            </div>
+            <div class="space-y-3">
+                <h2 class="text-3xl font-extrabold text-slate-100 tracking-tight">O Poder dos Cortes Transversais</h2>
+                <p class="text-slate-300 leading-relaxed text-sm md:text-base max-w-2xl mx-auto">
+                    A Tomografia Computadorizada (TC) permite fatiar o corpo humano em fatias milimétricas usando um tubo de raio-X giratório. Seu dever é ajustar a radiação de forma inteligente (princípio ALARA), definir o uso de contraste e encontrar patologias críticas através do ajuste de janelamento e análise de múltiplos cortes.
+                </p>
+            </div>
+
+            <!-- Mecânicas de jogo explicadas -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
+                <div class="p-4 bg-slate-950/60 border border-slate-850 rounded-2xl">
+                    <h4 class="font-bold text-cyan-400 flex items-center gap-1.5 text-xs font-console mb-1.5 uppercase">
+                        <i data-lucide="shield-alert" class="w-4 h-4"></i>
+                        1. Dose vs Ruído
+                    </h4>
+                    <p class="text-xs text-slate-400">kVp e mAs altos eliminam o ruído de imagem, mas expõem o paciente a muita radiação. Encontre o equilíbrio ideal!</p>
+                </div>
+                <div class="p-4 bg-slate-950/60 border border-slate-850 rounded-2xl">
+                    <h4 class="font-bold text-cyan-400 flex items-center gap-1.5 text-xs font-console mb-1.5 uppercase">
+                        <i data-lucide="droplet" class="w-4 h-4"></i>
+                        2. Fases de Contraste
+                    </h4>
+                    <p class="text-xs text-slate-400">Vasos precisam de fase arterial. Abdômen precisa de fase venosa. Suspeita de AVC hemorrágico não pode levar contraste!</p>
+                </div>
+                <div class="p-4 bg-slate-950/60 border border-slate-850 rounded-2xl">
+                    <h4 class="font-bold text-cyan-400 flex items-center gap-1.5 text-xs font-console mb-1.5 uppercase">
+                        <i data-lucide="sliders" class="w-4 h-4"></i>
+                        3. Janelamento (WW)
+                    </h4>
+                    <p class="text-xs text-slate-400">Altere a Janela (Cérebro, Osso ou Pulmão). A janela errada oculta totalmente tumores e sangramentos.</p>
+                </div>
+            </div>
+
+            <button onclick="changeScreen('screen-cases')" class="px-8 py-4 bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-extrabold rounded-2xl transition duration-150 shadow-lg shadow-cyan-500/20 transform hover:-translate-y-0.5 flex items-center justify-center gap-2 mx-auto text-lg">
+                Iniciar Plantão de Tomografia
+                <i data-lucide="play" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <!-- TELA 2: SELEÇÃO DE PACIENTES -->
+        <div id="screen-cases" class="hidden space-y-6">
+            <div class="text-center space-y-2 max-w-2xl mx-auto">
+                <h2 class="text-2xl font-bold text-slate-100">Prontuários para Investigação por Imagem</h2>
+                <p class="text-slate-400 text-sm">Selecione o paciente e configure os parâmetros de aquisição corretos para o exame.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Caso 1: AVC -->
+                <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between space-y-6">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-start">
+                            <span class="bg-red-500/15 border border-red-500/30 text-red-400 text-xs px-2.5 py-1 rounded-full font-bold">Urgência Neurológica</span>
+                            <i data-lucide="brain" class="w-6 h-6 text-red-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg text-slate-100">Dona Helena Rodrigues</h3>
+                            <p class="text-xs text-slate-400 mt-1">67 anos • Afasia e Hemiparesia súbita</p>
+                        </div>
+                        <p class="text-xs text-slate-400 border-t border-slate-800/80 pt-3 leading-relaxed">
+                            Suspeita de AVC agudo. É crucial excluir hemorragia craniana (sangue é hiperdenso) antes de qualquer medicação trombolítica.
+                        </p>
+                    </div>
+                    <button onclick="selectCase(0)" class="w-full py-3 bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-bold rounded-xl transition flex items-center justify-center gap-2 text-sm">
+                        Abrir Prontuário de Crânio
+                        <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Caso 2: Embolia Pulmonar -->
+                <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between space-y-6">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-start">
+                            <span class="bg-blue-500/15 border border-blue-500/30 text-blue-400 text-xs px-2.5 py-1 rounded-full font-bold">Emergência Torácica</span>
+                            <i data-lucide="heart-pulse" class="w-6 h-6 text-blue-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg text-slate-100">Sr. Augusto Fontes</h3>
+                            <p class="text-xs text-slate-400 mt-1">45 anos • Dispneia súbita e dor torácica</p>
+                        </div>
+                        <p class="text-xs text-slate-400 border-t border-slate-800/80 pt-3 leading-relaxed">
+                            Pós-operatório de cirurgia ortopédica. Suspeita clínica de TEP (Tromboembolismo Pulmonar). Requer visualização exata das artérias pulmonares.
+                        </p>
+                    </div>
+                    <button onclick="selectCase(1)" class="w-full py-3 bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-bold rounded-xl transition flex items-center justify-center gap-2 text-sm">
+                        Abrir Prontuário de Angio-TC
+                        <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Caso 3: Apendicite -->
+                <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between space-y-6">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-start">
+                            <span class="bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs px-2.5 py-1 rounded-full font-bold">Abdômen Agudo</span>
+                            <i data-lucide="activity" class="w-6 h-6 text-amber-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg text-slate-100">Jovem Bruno Alencar</h3>
+                            <p class="text-xs text-slate-400 mt-1">19 anos • Dor intensa em fossa ilíaca direita</p>
+                        </div>
+                        <p class="text-xs text-slate-400 border-t border-slate-800/80 pt-3 leading-relaxed">
+                            Quadro álgico progressivo com febre e náuseas. Suspeita de inflamação aguda do apêndice cecal. Ajuste bem os contrastes de partes moles!
+                        </p>
+                    </div>
+                    <button onclick="selectCase(2)" class="w-full py-3 bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-bold rounded-xl transition flex items-center justify-center gap-2 text-sm">
+                        Abrir Prontuário de Abdômen
+                        <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TELA 3: PAINEL DE COMANDO E AQUISIÇÃO DE TC -->
+        <div id="screen-acquisition" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+           
+            <!-- Console de Parâmetros de Aquisição (Lg: 5/12) -->
+            <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between space-y-6 shadow-xl">
+               
+                <!-- Prontuário Rápido -->
+                <div class="bg-slate-950/80 border border-slate-850 p-4 rounded-xl space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] uppercase font-console tracking-wider text-slate-400">Exame Solicitado</span>
+                        <span class="text-xs bg-cyan-500/20 text-cyan-400 px-2.5 py-0.5 rounded font-bold font-console" id="acq-exam-type">TC DE CRÂNIO</span>
+                    </div>
+                    <h3 class="font-bold text-lg text-slate-100" id="acq-patient-name">Paciente</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed" id="acq-patient-history"></p>
+                </div>
+
+                <!-- Painel Dosimétrico e ALARA -->
+                <div class="bg-slate-950 border border-slate-850 p-4 rounded-xl space-y-3 font-console">
+                    <h4 class="font-bold text-xs uppercase text-slate-400 tracking-wider">Monitoramento Dosimétrico Estimado</h4>
+                    <div class="grid grid-cols-2 gap-3 text-xs border-t border-slate-800/80 pt-3">
+                        <div>
+                            <span class="text-[9px] text-slate-400 block">CTDIvol (DOSE DE RADIAÇÃO):</span>
+                            <span class="text-base font-bold text-cyan-400" id="val-ctdivol">0.0 mGy</span>
+                        </div>
+                        <div>
+                            <span class="text-[9px] text-slate-400 block">NÍVEL DE RUÍDO DA IMAGEM:</span>
+                            <span class="text-base font-bold text-slate-100" id="val-noise-estimate">0.0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Controles Físicos do Scanner -->
+                <div class="space-y-4 border-t border-slate-800/60 pt-4">
+                    <h4 class="font-bold text-xs uppercase font-console tracking-widest text-cyan-400">Parâmetros do Protocolo</h4>
+                   
+                    <!-- kVp e mAs (Dose vs Ruído) -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-1">
+                            <label class="text-xs text-slate-400 flex justify-between font-console">
+                                <span>Voltagem (kVp)</span>
+                                <span class="font-bold text-cyan-400" id="lbl-kvp">120 kV</span>
+                            </label>
+                            <input type="range" id="input-kvp" min="80" max="140" step="20" value="120" class="w-full accent-cyan-500 cursor-pointer">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs text-slate-400 flex justify-between font-console">
+                                <span>Corrente (mAs)</span>
+                                <span class="font-bold text-cyan-400" id="lbl-mas">250 mAs</span>
+                            </label>
+                            <input type="range" id="input-mas" min="100" max="400" step="50" value="250" class="w-full accent-cyan-500 cursor-pointer">
+                        </div>
+                    </div>
+
+                    <!-- Espessura de Corte (Slice Thickness) -->
+                    <div class="space-y-1.5">
+                        <label class="text-xs text-slate-400 flex justify-between font-console">
+                            <span>Espessura de Corte</span>
+                            <span class="font-bold text-cyan-400" id="lbl-slice-thickness">2.0 mm</span>
+                        </label>
+                        <div class="grid grid-cols-3 gap-1">
+                            <button onclick="setSliceThickness(0.625)" id="btn-slice-0" class="py-1.5 bg-slate-950 hover:bg-slate-850 text-xs font-bold rounded-lg border border-slate-800 transition">0.625 mm</button>
+                            <button onclick="setSliceThickness(2.0)" id="btn-slice-1" class="py-1.5 bg-cyan-500 text-slate-950 text-xs font-bold rounded-lg border border-cyan-400 transition">2.0 mm</button>
+                            <button onclick="setSliceThickness(5.0)" id="btn-slice-2" class="py-1.5 bg-slate-950 hover:bg-slate-850 text-xs font-bold rounded-lg border border-slate-800 transition">5.0 mm</button>
+                        </div>
+                    </div>
+
+                    <!-- Administração de Contraste e Delay -->
+                    <div class="space-y-2 border-t border-slate-800/40 pt-3">
+                        <label class="text-xs text-slate-400 font-console block">Injeção de Contraste Endovenoso</label>
+                        <div class="grid grid-cols-3 gap-1">
+                            <button onclick="setContrastPhase('none')" id="btn-contrast-none" class="py-1.5 bg-cyan-500 text-slate-950 text-xs font-bold rounded-lg border border-cyan-400 transition">Sem Contraste</button>
+                            <button onclick="setContrastPhase('arterial')" id="btn-contrast-arterial" class="py-1.5 bg-slate-950 hover:bg-slate-850 text-xs font-bold rounded-lg border border-slate-800 transition">Fase Arterial</button>
+                            <button onclick="setContrastPhase('venous')" id="btn-contrast-venous" class="py-1.5 bg-slate-950 hover:bg-slate-850 text-xs font-bold rounded-lg border border-slate-800 transition">Fase Venosa</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botão Disparar Varredura -->
+                <button onclick="runTomographyScan()" class="w-full py-4 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-xl font-extrabold shadow-lg shadow-cyan-500/10 flex flex-col items-center justify-center relative select-none">
+                    <span class="text-sm flex items-center gap-1.5 uppercase tracking-wider">
+                        <i data-lucide="zap" class="w-5 h-5 animate-pulse"></i>
+                        Disparar Varredura (Scan)
+                    </span>
+                    <span class="text-[9px] opacity-85 uppercase font-console">Gantry iniciará rotação e aquisição helicoidal</span>
+                </button>
+            </div>
+
+            <!-- Visualização da Sala de Tomografia (Lg: 7/12) -->
+            <div class="lg:col-span-7 bg-slate-950 border border-slate-800 rounded-2xl p-6 flex flex-col justify-center items-center relative min-h-[500px]">
+               
+                <!-- Dica didática ativa -->
+                <div class="absolute top-4 left-4 right-4 bg-slate-900/80 border border-slate-800 p-3 rounded-xl flex items-start gap-2 text-xs text-slate-300">
+                    <i data-lucide="info" class="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5 animate-bounce"></i>
+                    <div>
+                        <span class="font-bold text-cyan-400">Orientação Técnica: </span>
+                        <span id="acq-clinical-tip">...</span>
+                    </div>
+                </div>
+
+                <!-- Desenho vetorial/SVG do Gantry e Mesa -->
+                <div class="w-full max-w-sm mt-8 relative rounded-xl overflow-hidden aspect-square flex flex-col items-center justify-center">
+                   
+                    <!-- Laser Vermelho de Centralização (Aparece ativo) -->
+                    <div id="laser-line" class="absolute w-full h-[2px] bg-red-500/80 shadow-[0_0_8px_rgba(239,68,68,1)] z-10 transition-all duration-300" style="top: 50%;"></div>
+                   
+                    <svg id="gantry-svg" viewBox="0 0 300 300" class="w-64 h-64 z-0 transition-transform duration-300">
+                        <!-- Anel Externo do Gantry (Tomógrafo) -->
+                        <circle cx="150" cy="150" r="140" fill="#1e293b" stroke="#475569" stroke-width="12" />
+                        <circle cx="150" cy="150" r="120" fill="#0f172a" stroke="#334155" stroke-width="4" />
+                       
+                        <!-- Rotor Interno de Raio-X (Rotacionará no escaneamento) -->
+                        <g id="gantry-rotor" class="origin-center transition-transform duration-1000">
+                            <!-- Ampola de Raio-X -->
+                            <rect x="135" y="15" width="30" height="25" rx="3" fill="#cbd5e1" stroke="#ef4444" stroke-width="2" />
+                            <circle cx="150" cy="27" r="4" fill="#ef4444" />
+                            <!-- Detectores de imagem opostos -->
+                            <path d="M 120 270 Q 150 260 180 270" fill="none" stroke="#06b6d4" stroke-width="8" stroke-linecap="round" />
+                        </g>
+
+                        <!-- Abertura Central (Furo do Gantry) -->
+                        <circle cx="150" cy="150" r="85" fill="#020617" stroke="#334155" stroke-width="2" />
+                    </svg>
+
+                    <!-- Mesa do Paciente deslizante -->
+                    <div id="patient-table" class="absolute h-10 bg-slate-700 border border-slate-600 rounded-t-lg shadow-lg flex items-center justify-center transition-all duration-1000" style="width: 140px; bottom: 10px; transform: translateY(0px);">
+                        <!-- Representação simplificada do paciente deitado -->
+                        <div class="w-16 h-4 bg-amber-200/40 rounded-full border border-amber-200/20"></div>
+                    </div>
+                </div>
+
+                <!-- Animador de Varredura ativa -->
+                <div id="scan-progress-bar-container" class="hidden w-full max-w-sm mt-6 space-y-2">
+                    <div class="flex justify-between text-xs text-slate-400 font-console">
+                        <span>AQUISIÇÃO COLETANDO CORTES...</span>
+                        <span id="scan-progress-percentage">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-900 border border-slate-800 h-3 rounded-full overflow-hidden p-[1px]">
+                        <div id="scan-progress-bar" class="h-full bg-cyan-500 rounded-full w-0 transition-all duration-300"></div>
+                    </div>
+                </div>
+
+                <div class="mt-4 flex gap-4 text-xs font-console">
+                    <span id="scan-status-badge" class="px-3 py-1 bg-slate-900 border border-slate-800 text-slate-500 rounded-full flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full bg-slate-600" id="status-led"></span>
+                        SCANNER PRONTO
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- TELA 4: NEGATOSCÓPIO / INTERPRETAÇÃO MULTI-SLICE (Mesa de Laudos) -->
+        <div id="screen-reading" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+           
+            <!-- Painel de Janelamento e Controles de Leitura (Lg: 5/12) -->
+            <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between space-y-6 shadow-xl">
+                <div class="space-y-4">
+                    <div class="flex items-center gap-2 text-cyan-400 font-bold">
+                        <i data-lucide="monitor" class="w-5 h-5"></i>
+                        <span>Análise de Tomogramas</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-100">Console de Janelamento & Filtros</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Utilize o painel para ajustar a janela visual. O valor de brilho central (WL) e largura de contraste (WW) alteram os tons exibidos para destacar ossos, partes moles ou ar.
+                    </p>
+
+                    <!-- Seletores Rápidos de Janelas de TC -->
+                    <div class="space-y-2 border-t border-slate-800/60 pt-3">
+                        <label class="text-xs text-slate-400 font-console block">Selecionar Tipo de Janelamento</label>
+                        <div class="grid grid-cols-3 gap-1">
+                            <button onclick="setCTWindow('soft')" id="btn-win-soft" class="py-2 bg-cyan-500 text-slate-950 text-xs font-bold rounded-lg border border-cyan-400 transition">Partes Moles (Cérebro/Abdômen)</button>
+                            <button onclick="setCTWindow('bone')" id="btn-win-bone" class="py-2 bg-slate-950 hover:bg-slate-850 text-xs text-slate-400 font-bold rounded-lg border border-slate-800 transition">Óssea (Bones)</button>
+                            <button onclick="setCTWindow('lung')" id="btn-win-lung" class="py-2 bg-slate-950 hover:bg-slate-850 text-xs text-slate-400 font-bold rounded-lg border border-slate-800 transition">Pulmão / Angio (Lungs)</button>
+                        </div>
+                    </div>
+
+                    <!-- Navegador de Fatias / Slices (Scroll) -->
+                    <div class="space-y-2 border-t border-slate-800/60 pt-3 bg-slate-950/40 p-3 rounded-xl">
+                        <label class="text-xs text-slate-400 flex justify-between font-console">
+                            <span>Navegar pelas Fatias (Z-Axis Scroll)</span>
+                            <span class="text-cyan-400 font-bold">Slice: <span id="lbl-current-slice">5</span> / 10</span>
+                        </label>
+                        <input type="range" id="input-slice-navigator" min="1" max="10" value="5" class="w-full accent-cyan-500 cursor-pointer">
+                        <p class="text-[10px] text-slate-500 text-center uppercase font-console">Use o controle deslizante ou use as setas do teclado para folhear as fatias</p>
+                    </div>
+
+                    <!-- Instruções diagnósticas -->
+                    <div class="p-3.5 bg-cyan-950/30 border border-cyan-800/30 rounded-xl text-xs text-cyan-400 space-y-1">
+                        <span class="font-bold flex items-center gap-1.5 uppercase font-console text-[10px]">
+                            <i data-lucide="search" class="w-4.5 h-4.5"></i> Busca de Lesão Ativa:
+                        </span>
+                        <p class="leading-relaxed">
+                            Folheie as fatias de 1 a 10. Quando localizar o corte que exibe a patologia suspeita na janela de cor correta, dê um clique diretamente sobre ela para marcar.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="space-y-3 pt-4 border-t border-slate-800/60">
+                    <div id="read-finding-feedback" class="p-3 bg-slate-950 rounded-xl text-center text-xs font-semibold text-slate-500 border border-slate-850 font-console">
+                        Sem marcador de lesão registrado
+                    </div>
+                   
+                    <button onclick="diagnoseNormalScan()" class="w-full py-2.5 bg-blue-900/40 hover:bg-blue-900 border border-blue-800 text-slate-200 text-xs font-bold rounded-xl transition flex items-center justify-center gap-2">
+                        <i data-lucide="shield" class="w-4 h-4 text-blue-400"></i> Declarar Exame como Normal (Sem Patologias)
+                    </button>
+                   
+                    <button onclick="submitComputedTomographyReport()" class="w-full py-4 bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-extrabold rounded-xl transition shadow-lg flex items-center justify-center gap-2 text-sm uppercase tracking-wide">
+                        Assinar e Enviar Prontuário
+                        <i data-lucide="file-check" class="w-4.5 h-4.5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Negatoscópio Interativo (Lg: 7/12) -->
+            <div class="lg:col-span-7 bg-slate-950 border border-slate-800 rounded-2xl p-6 flex flex-col justify-center items-center relative min-h-[480px]">
+                <span class="absolute top-4 left-4 bg-slate-900 border border-slate-800 text-slate-400 text-[10px] px-3 py-1 rounded-full font-console flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                    VISUALIZADOR MULTI-AXIAL ATIVO
+                </span>
+
+                <div class="w-full max-w-sm mt-8 relative rounded-xl overflow-hidden aspect-square border border-slate-800 ct-viewport">
+                    <!-- O Canvas que desenha o corte transversal simulado com base no Slice e na Janela -->
+                    <canvas id="ct-slice-canvas" width="400" height="400" class="w-full h-full cursor-crosshair transition-all duration-150" onclick="markPathologyLocation(event)"></canvas>
+
+                    <!-- Efeito visual de ruído de dose baixa -->
+                    <div id="dose-noise-overlay" class="absolute inset-0 pointer-events-none opacity-0 bg-transparent"></div>
+                </div>
+
+                <div class="mt-4 text-[10px] text-slate-500 font-console flex gap-4">
+                    <span>JANELA ATIVA: <strong id="val-read-window" class="text-slate-300">Partes Moles</strong></span>
+                    <span>•</span>
+                    <span>RUÍDO EXPERIMENTADO: <strong id="val-read-noise" class="text-slate-300">Médio</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- TELA 5: FEEDBACK DO PROCEDIMENTO -->
+        <div id="screen-feedback" class="hidden max-w-xl mx-auto bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6">
+            <div class="text-center space-y-2">
+                <div id="feedback-icon-container" class="inline-flex p-4 rounded-full text-slate-950 mb-2">
+                    <!-- Ícone Dinâmico -->
+                </div>
+                <h2 class="text-2xl font-bold text-slate-100 animate-pulse" id="feedback-title">Análise de Procedimento</h2>
+                <p class="text-xs text-slate-400">Relatório Geral de Segurança ALARA e Exatidão de Laudo</p>
+            </div>
+
+            <!-- Placar de Atividade -->
+            <div class="grid grid-cols-3 gap-4 border-y border-slate-800/80 py-6 text-center font-console">
+                <div>
+                    <span class="text-[10px] text-slate-400 block mb-1">Dose Estimada</span>
+                    <strong class="text-lg text-rose-400" id="feedback-dose">0.0 mGy</strong>
+                </div>
+                <div>
+                    <span class="text-[10px] text-slate-400 block mb-1">Ruído Adquirido</span>
+                    <strong class="text-lg text-cyan-400" id="feedback-noise">0%</strong>
+                </div>
+                <div>
+                    <span class="text-[10px] text-slate-400 block mb-1">Diagnóstico</span>
+                    <strong class="text-lg text-slate-200" id="feedback-diagnostic">Correto</strong>
+                </div>
+            </div>
+
+            <!-- Cartão Educativo Clinico -->
+            <div class="space-y-3 bg-slate-950 border border-slate-850 p-5 rounded-2xl">
+                <h4 class="font-bold text-cyan-400 text-xs flex items-center gap-1.5 uppercase font-console tracking-wider">
+                    <i data-lucide="book-open" class="w-4 h-4"></i>
+                    Fisiopatologia & Física Médica
+                </h4>
+                <p id="feedback-educational-text" class="text-xs text-slate-400 leading-relaxed"></p>
+            </div>
+
+            <div class="flex gap-4 font-bold text-xs uppercase tracking-wide">
+                <button onclick="backToMenu()" class="flex-1 py-3.5 bg-slate-850 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-xl transition flex items-center justify-center gap-2">
+                    <i data-lucide="home" class="w-4.5 h-4.5"></i>
+                    Voltar ao Menu
+                </button>
+                <button onclick="goToCasesSelect()" class="flex-grow py-3.5 bg-cyan-500 hover:bg-cyan-600 text-slate-950 rounded-xl transition flex items-center justify-center gap-2">
+                    Próximo Exame
+                    <i data-lucide="arrow-right" class="w-4.5 h-4.5"></i>
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Rodapé Técnico -->
+    <footer class="border-t border-slate-800 py-4 px-6 text-center text-xs text-slate-500 font-console">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
+            <span>&copy; 2026 CTSim - Simulador Científico de Radiologia Computadorizada.</span>
+            <div class="flex gap-4">
+                <a href="#" class="hover:text-cyan-400 transition">Princípio ALARA</a>
+                <span>&bull;</span>
+                <a href="#" class="hover:text-cyan-400 transition">Janelamento Médico</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts de Lógica de Negócio do Jogo -->
+    <script>
+        // Banco de Dados de Casos de Tomografia
+        const ctCases = [
+            {
+                id: 0,
+                name: "Dona Helena Rodrigues",
+                examType: "TC DE CRÂNIO S/ CONTRASTE",
+                history: "Idosa de 67 anos encontrada desacordada com fala confusa (afasia) e hemiparesia à direita. Tempo de início desconhecido. Suspeita clínica de AVC.",
+                clinicalTip: "Para suspeita de AVC agudo, NUNCA inicie com contraste iodado imediato, pois o contraste na artéria brilha branco e pode mascarar ou ser confundido com um sangramento agudo (hiperdensidade branca). Utilize janela de Partes Moles (Soft Tissue/Cérebro).",
+                requiresContrast: "none", // Nenhuma fase de contraste recomendada
+                perfectThickness: 5.0, // Cortes mais grossos reduzem ruído e são clássicos no crânio de rotina
+                targetSlice: 6, // Lesão está no slice 6
+                pathologyCoords: { x: 250, y: 160 }, // Lado esquerdo da imagem (hemisfério direito do cérebro)
+                pathologyType: "hemorrhage",
+                correctWindow: "soft",
+                medicalExplanation: "Exame processado! Você identificou corretamente a hemorragia intraparenquimatosa aguda (área branca hiperdensa) no lobo temporal esquerdo de Dona Helena. Na clínica real de AVC, excluir o sangramento por TC sem contraste é o passo fundamental para decidir se o paciente pode ou não ser submetido à trombólise química.",
+                targetDose: 45 // mGy ideal para crânio de rotina
+            },
+            {
+                id: 1,
+                name: "Sr. Augusto Fontes",
+                examType: "ANGIO-TC DE TÓRAX (TEP)",
+                history: "Paciente de 45 anos com dispneia intensa e dor torácica aguda em pontada após longa viagem de avião. Suspeita clínica de Embolia Pulmonar.",
+                clinicalTip: "A visualização do trombo nas artérias pulmonares exige injeção de contraste endovenoso e disparo rápido na FASE ARTERIAL. Utilize a janela de Pulmão/Angio para ver a árvore arterial brilhando e identificar se há falha de enchimento escura.",
+                requiresContrast: "arterial",
+                perfectThickness: 0.625, // Cortes ultrafinos para ver artérias segmentares pequenas
+                targetSlice: 5, // Bifurcação das artérias pulmonares
+                pathologyCoords: { x: 145, y: 212 }, // Dentro de um dos ramos arteriais
+                pathologyType: "embolism",
+                correctWindow: "lung",
+                medicalExplanation: "Excelente diagnóstico! Você aplicou cortes ultrafinos e contraste na fase arterial correta, revelando a falha de enchimento (trombo escuro) no tronco principal esquerdo da artéria pulmonar. A Angiotomografia de Tórax com protocolo correto é o padrão-ouro internacional para diagnóstico rápido de TEP.",
+                targetDose: 15
+            },
+            {
+                id: 2,
+                name: "Jovem Bruno Alencar",
+                examType: "TC DE ABDÔMEN E PELVE",
+                history: "Paciente de 19 anos com dor epigástrica que migrou para a fossa ilíaca direita (Sinal de Blumberg positivo). Nega comorbidades prévias.",
+                clinicalTip: "Casos de abdômen agudo inflamatório (apendicite) necessitam de contraste em FASE VENOSA para que o tecido inflamatório ao redor do apêndice e a parede do órgão realcem intensamente. Use janela de Partes Moles e cortes de 2.0 mm.",
+                requiresContrast: "venous",
+                perfectThickness: 2.0,
+                targetSlice: 8, // Quadrante inferior direito
+                pathologyCoords: { x: 135, y: 285 },
+                pathologyType: "appendicitis",
+                correctWindow: "soft",
+                medicalExplanation: "Apendicite identificada com maestria! O contraste na fase venosa portal permitiu ver o apêndice dilatado com espessamento parietal (completamente ausente no exame sem contraste) e densificação da gordura circundante. Esse realce de parede é chave para o diagnóstico rápido antes de uma perfuração.",
+                targetDose: 20
+            }
+        ];
+
+        // Estado Global
+        let currentScreen = "screen-intro";
+        let activeCase = null;
+        let globalScore = 0;
+        let casesCompleted = 0;
+        let totalDoseExp = 0;
+
+        // Estado do Sintetizador Tone.js
+        let gantryAudioEngine = null;
+
+        // Estado Técnico do Simulador Ativo
+        let simState = {
+            kvp: 120,
+            mas: 250,
+            sliceThickness: 2.0,
+            contrastPhase: "none",
+            ctdivol: 0,
+            noise: 0,
+            currentSlice: 5,
+            activeWindow: "soft",
+            hasScanned: false,
+            markedCoords: null,
+            isNormalDeclared: false
+        };
+
+        // LOOP DE RENDERIZAÇÃO DO SCAN (Negatoscópio)
+        const canvas = document.getElementById('ct-slice-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Inicializador de áudio sintético do rotor
+        function initGantryAudio() {
+            if (!gantryAudioEngine) {
+                // Sintetiza um som industrial oscilatório de gantry girando rápido
+                gantryAudioEngine = new Tone.Oscillator({
+                    type: "sine",
+                    frequency: 80,
+                    volume: -15
+                }).toDestination();
+            }
+        }
+
+        // Navegação de telas
+        function changeScreen(screenId) {
+            document.getElementById(currentScreen).classList.add('hidden');
+            document.getElementById(screenId).classList.remove('hidden');
+            currentScreen = screenId;
+        }
+
+        // Configuração de Parâmetros Básicos no Console
+        document.getElementById('input-kvp').addEventListener('input', function(e) {
+            simState.kvp = parseInt(e.target.value);
+            document.getElementById('lbl-kvp').innerText = `${simState.kvp} kV`;
+            calculateScanMetrics();
+        });
+
+        document.getElementById('input-mas').addEventListener('input', function(e) {
+            simState.mas = parseInt(e.target.value);
+            document.getElementById('lbl-mas').innerText = `${simState.mas} mAs`;
+            calculateScanMetrics();
+        });
+
+        function setSliceThickness(val) {
+            simState.sliceThickness = val;
+           
+            // Reseta botões
+            document.getElementById('btn-slice-0').className = "py-1.5 bg-slate-950 text-xs text-slate-400 font-bold rounded-lg border border-slate-800 transition";
+            document.getElementById('btn-slice-1').className = "py-1.5 bg-slate-950 text-xs text-slate-400 font-bold rounded-lg border border-slate-800 transition";
+            document.getElementById('btn-slice-2').className = "py-1.5 bg-slate-950 text-xs text-slate-400 font-bold rounded-lg border border-slate-800 transition";
+
+            if (val === 0.625) {
+                document.getElementById('btn-slice-0').className = "py-1.5 bg-cyan-500 text-slate-950 text-xs font-bold rounded-lg border border-cyan-400 transition";
+            } else if (val === 2.0) {
+                document.getElementById('btn-slice-1').className = "py-1.5 bg-cyan-500 text-slate-950 text-xs font-bold rounded-lg border border-cyan-400 transition";
+            } else {
+                document.getElementById('btn-slice-2').className = "py-1.5 bg-cyan-500 text-slate-950 text-xs font-bold rounded-lg border border-cyan-400 transition";
+            }
+            document.getElementById('lbl-slice-thickness').innerText = `${val} mm`;
+            playUiClickSound();
+            calculateScanMetrics();
+        }
+
+        function setContrastPhase(phase) {
+            simState.contrastPhase = phase;
+
+            document.getElementById('btn-contrast-none').className = "py-1.5 bg-slate-950 text-xs text-slate-400 font-bold rounded-lg border border-slate-800 transition";
+            document.getElementById('btn-contrast-arterial').className = "py-1.5 bg-slate-950 text-xs text-slate-400 font-bold rounded-lg border border-slate-800 transition";
+            document.getElementById('btn-contrast-venous').className = "py-1.5 bg-slate-950 text-xs text-slate-400 font-bold rounded-lg border border-slate-800 transition";
+
+            if (phase === "none") {
+                document.getElementById('btn-contrast-none').className = "py-1.5 bg-cyan-500 text-slate-950 text-xs font-bold rounded-lg border border-cyan-400 transition";
+            } else if (phase === "arterial") {
+                document.getElementById('btn-contrast-arterial').className = "py-1.5 bg-cyan-500 text-slate-950 text-xs font-bold rounded-lg border border-cyan-400 transition";
+            } else {
+                document.getElementById('btn-contrast-venous').className = "py-1.5 bg-cyan-500 text-slate-950 text-xs font-bold rounded-lg border border-cyan-400 transition";
+            }
+            playUiClickSound();
+        }
+
+        // Calcula a dose e o ruído com base em relações físicas de Tomografia
+        function calculateScanMetrics() {
+            // Relação física: Dose (CTDIvol) é proporcional ao mAs e proporcional ao quadrado do kVp
+            // Base de referência: 120 kVp, 250 mAs, corte de 2.0 mm
+            let baseDose = 15.0;
+           
+            // Fatores de dose
+            let kvpFactor = Math.pow(simState.kvp / 120, 2);
+            let masFactor = simState.mas / 250;
+           
+            // Cortes finos (0.625 mm) aumentam a dose de ruído compensatória e de sobreposição
+            let thicknessFactor = simState.sliceThickness === 0.625 ? 1.4 : (simState.sliceThickness === 5.0 ? 0.7 : 1.0);
+
+            // Ajustando a dose calculada estimativamente
+            simState.ctdivol = baseDose * kvpFactor * masFactor * thicknessFactor;
+           
+            // Ajuste especial por tipo de exame (ex: crânio precisa de dose muito maior por conta do osso denso do crânio)
+            if (activeCase && activeCase.id === 0) {
+                simState.ctdivol *= 2.5; // Fator de atenuação óssea craniana
+            }
+
+            // O Ruído de Imagem é inversamente proporcional à raiz quadrada da dose e da espessura do corte
+            // Base de ruído ideal: 1.5%
+            let noiseFactor = 1.0 / (Math.sqrt(masFactor) * Math.sqrt(simState.sliceThickness / 2.0));
+            simState.noise = 1.8 * noiseFactor;
+
+            document.getElementById('val-ctdivol').innerText = `${simState.ctdivol.toFixed(1)} mGy`;
+            document.getElementById('val-noise-estimate').innerText = `${simState.noise.toFixed(2)}%`;
+        }
+
+        // Seleção de Caso Clínico
+        function selectCase(index) {
+            activeCase = ctCases[index];
+
+            // Setup de Estado Inicial
+            simState = {
+                kvp: 120,
+                mas: 250,
+                sliceThickness: index === 0 ? 5.0 : 2.0,
+                contrastPhase: "none",
+                ctdivol: 0,
+                noise: 0,
+                currentSlice: 5,
+                activeWindow: "soft",
+                hasScanned: false,
+                markedCoords: null,
+                isNormalDeclared: false
+            };
+
+            // Atualização de elementos textuais do Console
+            document.getElementById('acq-exam-type').innerText = activeCase.examType;
+            document.getElementById('acq-patient-name').innerText = activeCase.name;
+            document.getElementById('acq-patient-history').innerText = activeCase.history;
+            document.getElementById('acq-clinical-tip').innerText = activeCase.clinicalTip;
+
+            // Ajusta botões de seleção de espessura adequados ao caso selecionado por padrão
+            setSliceThickness(simState.sliceThickness);
+            calculateScanMetrics();
+
+            // Reseta mesa de gantry para posição zero
+            document.getElementById('patient-table').style.transform = "translateY(0px)";
+            document.getElementById('gantry-rotor').style.transform = "rotate(0deg)";
+            document.getElementById('scan-progress-bar-container').classList.add('hidden');
+
+            changeScreen('screen-acquisition');
+        }
+
+        // Dispara o Processamento de Varredura (Tomografia Helicoidal)
+        function runTomographyScan() {
+            initGantryAudio();
+           
+            // Altera estado para escaneamento ativo
+            const progressContainer = document.getElementById('scan-progress-bar-container');
+            const progressBar = document.getElementById('scan-progress-bar');
+            const progressPercent = document.getElementById('scan-progress-percentage');
+            const led = document.getElementById('status-led');
+            const statusBadge = document.getElementById('scan-status-badge');
+
+            progressContainer.classList.remove('hidden');
+            progressBar.style.width = "0%";
+            progressPercent.innerText = "0%";
+
+            led.className = "w-2.5 h-2.5 rounded-full bg-red-500 animate-ping";
+            statusBadge.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-red-500" id="status-led"></span> RAIO-X EMISSÃO ATIVA`;
+            statusBadge.className = "px-3 py-1 bg-red-950 border border-red-800 text-red-400 rounded-full flex items-center gap-1.5";
+
+            // Ativa o som do motor de alta rotação e o rotor de raio-X
+            if (gantryAudioEngine) {
+                gantryAudioEngine.start();
+                gantryAudioEngine.frequency.rampTo(280, 2); // Som crescendo
+            }
+
+            // Animação visual da mesa do paciente entrando no gantry
+            document.getElementById('patient-table').style.transform = "translateY(-60px)";
+           
+            // Gira o Rotor de Raio-X do Gantry repetidas vezes
+            let angle = 0;
+            const rotorInterval = setInterval(() => {
+                angle += 45;
+                document.getElementById('gantry-rotor').style.transform = `rotate(${angle}deg)`;
+            }, 60);
+
+            // Progresso do Scan
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += 5;
+                progressBar.style.width = `${progress}%`;
+                progressPercent.innerText = `${progress}%`;
+
+                if (progress >= 100) {
+                    clearInterval(progressInterval);
+                    clearInterval(rotorInterval);
+                   
+                    // Conclui Escaneamento
+                    setTimeout(() => {
+                        concludeScanProcess();
+                    }, 400);
+                }
+            }, 150);
+        }
+
+        // Conclui e passa para a mesa de leitura diagnóstica
+        function concludeScanProcess() {
+            if (gantryAudioEngine) {
+                gantryAudioEngine.stop();
+            }
+
+            // Restaura LED de estado
+            const led = document.getElementById('status-led');
+            const statusBadge = document.getElementById('scan-status-badge');
+            led.className = "w-2.5 h-2.5 rounded-full bg-slate-600";
+            statusBadge.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-slate-600" id="status-led"></span> SCANNER PRONTO`;
+            statusBadge.className = "px-3 py-1 bg-slate-900 border border-slate-800 text-slate-500 rounded-full flex items-center gap-1.5";
+
+            simState.hasScanned = true;
+
+            // Configura a tela de Negatoscópio (Mesa de leitura)
+            setupMultiSliceViewer();
+            changeScreen('screen-reading');
+        }
+
+        // Configura o visualizador de fatias
+        function setupMultiSliceViewer() {
+            simState.currentSlice = 5;
+            document.getElementById('lbl-current-slice').innerText = simState.currentSlice;
+            document.getElementById('input-slice-navigator').value = simState.currentSlice;
+
+            // Reseta laudo temporário
+            simState.markedCoords = null;
+            simState.isNormalDeclared = false;
+            document.getElementById('read-finding-feedback').innerText = "Sem marcador de lesão registrado";
+            document.getElementById('read-finding-feedback').className = "p-3 bg-slate-950 rounded-xl text-center text-xs font-semibold text-slate-500 border border-slate-850 font-console";
+
+            // Renderiza padrão de fatias inicial
+            setCTWindow('soft');
+        }
+
+        // Controla seleção de Janela de visualização (Janelamento)
+        function setCTWindow(winType) {
+            simState.activeWindow = winType;
+
+            document.getElementById('btn-win-soft').className = "py-2 bg-slate-950 text-xs text-slate-400 font-bold rounded-lg border border-slate-800 transition";
+            document.getElementById('btn-win-bone').className = "py-2 bg-slate-950 text-xs text-slate-400 font-bold rounded-lg border border-slate-800 transition";
+            document.getElementById('btn-win-lung').className = "py-2 bg-slate-950 text-xs text-slate-400 font-bold rounded-lg border border-slate-800 transition";
+
+            const windowLabel = document.getElementById('val-read-window');
+
+            if (winType === 'soft') {
+                document.getElementById('btn-win-soft').className = "py-2 bg-cyan-500 text-slate-950 text-xs font-bold rounded-lg border border-cyan-400 transition";
+                windowLabel.innerText = "Partes Moles (Cérebro / Abdômen)";
+            } else if (winType === 'bone') {
+                document.getElementById('btn-win-bone').className = "py-2 bg-cyan-500 text-slate-950 text-xs font-bold rounded-lg border border-cyan-400 transition";
+                windowLabel.innerText = "Óssea (Bones)";
+            } else {
+                document.getElementById('btn-win-lung').className = "py-2 bg-cyan-500 text-slate-950 text-xs font-bold rounded-lg border border-cyan-400 transition";
+                windowLabel.innerText = "Janela de Pulmão (Lungs)";
+            }
+
+            playUiClickSound();
+            drawActiveCTSlice();
+        }
+
+        // Navegador de fatias por input range
+        document.getElementById('input-slice-navigator').addEventListener('input', function(e) {
+            simState.currentSlice = parseInt(e.target.value);
+            document.getElementById('lbl-current-slice').innerText = simState.currentSlice;
+            drawActiveCTSlice();
+        });
+
+        // Habilita navegação de fatias usando as setas esquerda/direita do teclado
+        window.addEventListener('keydown', function(e) {
+            if (currentScreen !== "screen-reading") return;
+
+            let currentVal = parseInt(document.getElementById('input-slice-navigator').value);
+            if (e.key === "ArrowRight" || e.key === "ArrowUp") {
+                if (currentVal < 10) {
+                    currentVal++;
+                    document.getElementById('input-slice-navigator').value = currentVal;
+                    simState.currentSlice = currentVal;
+                    document.getElementById('lbl-current-slice').innerText = currentVal;
+                    drawActiveCTSlice();
+                }
+                e.preventDefault();
+            } else if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
+                if (currentVal > 1) {
+                    currentVal--;
+                    document.getElementById('input-slice-navigator').value = currentVal;
+                    simState.currentSlice = currentVal;
+                    document.getElementById('lbl-current-slice').innerText = currentVal;
+                    drawActiveCTSlice();
+                }
+                e.preventDefault();
+            }
+        });
+
+        // CORE DRAWING: Desenha os cortes anatômicos de forma procedural no Canvas com base na fatia e no janelamento
+        function drawActiveCTSlice() {
+            ctx.clearRect(0, 0, 400, 400);
+
+            // Paleta de tons cinzas dependendo do janelamento (Diferentes teores de Hounsfield HU)
+            let colors = {};
+            if (simState.activeWindow === 'soft') {
+                colors = {
+                    bg: '#000000',
+                    bone: '#ffffff', // Osso brilha intensamente
+                    air: '#050505',  // Ar é preto
+                    fat: '#1c1c1c',  // Gordura é cinza escura
+                    tissue: '#4f4f4f', // Partes moles é cinza média
+                    fluid: '#3a3a3a', // Fluido/Líquido cinza intermediária
+                    hyperdensity: '#eaeaea' // Sangue fresco/Contraste brilha branco
+                };
+            } else if (simState.activeWindow === 'bone') {
+                colors = {
+                    bg: '#000000',
+                    bone: '#d6d6d6', // Osso com matriz trabecular visível
+                    air: '#000000',
+                    fat: '#000000',
+                    tissue: '#141414', // Partes moles ficam extremamente escuras
+                    fluid: '#0c0c0c',
+                    hyperdensity: '#7f7f7f' // Sangue fica indistinguível
+                };
+            } else { // Janela de Pulmão (LUNG)
+                colors = {
+                    bg: '#000000',
+                    bone: '#ffffff',
+                    air: '#1c1c1c', // Tecido pulmonar com ar ganha nuances de cinza escuro
+                    fat: '#242424',
+                    tissue: '#5f5f5f',
+                    fluid: '#474747',
+                    hyperdensity: '#ffffff' // Contraste nas artérias pulmonares brilha muito
+                };
+            }
+
+            // Inicia desenho do fundo
+            ctx.fillStyle = colors.bg;
+            ctx.fillRect(0, 0, 400, 400);
+
+            // Renderiza anatomias específicas por Caso Clínico
+            if (activeCase.id === 0) {
+                drawSkullCTSlice(colors);
+            } else if (activeCase.id === 1) {
+                drawChestCTSlice(colors);
+            } else if (activeCase.id === 2) {
+                drawAbdomenCTSlice(colors);
+            }
+
+            // Renderiza o marcador de alvo caso o jogador tenha clicado em algum local
+            if (simState.markedCoords) {
+                ctx.strokeStyle = '#f43f5e';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.arc(simState.markedCoords.x, simState.markedCoords.y, 14, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.fillStyle = '#f43f5e';
+                ctx.beginPath();
+                ctx.arc(simState.markedCoords.x, simState.markedCoords.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Filtro de ruído baseado no parâmetro mAs (Ruído eletrônico/estático do scanner)
+            applyScannerImageNoise();
+        }
+
+        // Desenha cortes transversais da calota craniana e tecido cerebral (Caso 1)
+        function drawSkullCTSlice(colors) {
+            const center = { x: 200, y: 200 };
+            const current = simState.currentSlice;
+
+            // Raio do crânio varia conforme o corte (Z-axis)
+            let radiusX = 140;
+            let radiusY = 160;
+
+            if (current <= 2) {
+                radiusX = 100; radiusY = 110;
+            } else if (current >= 9) {
+                radiusX = 115; radiusY = 130;
+            }
+
+            // Calota Óssea (Osso craniano)
+            ctx.fillStyle = colors.bone;
+            ctx.beginPath();
+            ctx.ellipse(center.x, center.y, radiusX, radiusY, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Cavidade Craniana (Massa cerebral)
+            ctx.fillStyle = colors.tissue;
+            ctx.beginPath();
+            ctx.ellipse(center.x, center.y, radiusX - 12, radiusY - 12, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Ventrículos Cerebrais Centrais (Formato Borboleta - varia por slice)
+            if (current >= 3 && current <= 8) {
+                let vSize = (7 - Math.abs(current - 5.5)) * 6;
+                ctx.fillStyle = colors.air; // Líquor é escuro / densidade de água
+                ctx.beginPath();
+                // Corno esquerdo
+                ctx.ellipse(center.x - 16, center.y - 10, vSize / 2, vSize * 1.3, -Math.PI / 10, 0, Math.PI * 2);
+                // Corno direito
+                ctx.ellipse(center.x + 16, center.y - 10, vSize / 2, vSize * 1.3, Math.PI / 10, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // PATOLOGIA: AVC Hemorrágico (Hematoma Intraparenquimatoso agudo) no lobo esquerdo (lado direito da imagem)
+            // Visível primariamente na fatia (Slice) 6 e somente em janela de Partes Moles (Soft)
+            if (current === 6) {
+                ctx.fillStyle = colors.hyperdensity; // Brilha intensamente branco
+                ctx.beginPath();
+                ctx.ellipse(250, 160, 22, 16, Math.PI / 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Edema perineoplásico escuro ao redor da lesão
+                ctx.strokeStyle = colors.air;
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.ellipse(250, 160, 26, 20, Math.PI / 4, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        }
+
+        // Desenha cortes transversais do tórax - Pulmões, Mediastino e Artérias (Caso 2)
+        function drawChestCTSlice(colors) {
+            const current = simState.currentSlice;
+
+            // Parede Torácica / Costelas (Fatias médias)
+            ctx.fillStyle = colors.tissue;
+            ctx.beginPath();
+            ctx.ellipse(200, 200, 175, 140, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Osso das costelas periféricas e coluna torácica na retaguarda
+            ctx.fillStyle = colors.bone;
+            // Vértebra
+            ctx.fillRect(185, 310, 30, 22);
+            // Costelas estilizadas
+            for (let i = 0; i < 6; i++) {
+                ctx.fillRect(45 + i * 15, 130 + i * 5, 8, 4);
+                ctx.fillRect(345 - i * 15, 130 + i * 5, 8, 4);
+            }
+
+            // Pulmões Esquerdo e Direito (Preenchimento de Ar)
+            ctx.fillStyle = colors.air;
+            ctx.beginPath();
+            ctx.ellipse(115, 190, 65, 95, -Math.PI / 25, 0, Math.PI * 2);
+            ctx.ellipse(285, 190, 65, 95, Math.PI / 25, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Silhueta Cardíaca Central / Mediastino
+            ctx.fillStyle = colors.tissue;
+            ctx.beginPath();
+            ctx.arc(200, 195, 60, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Vasos Principais (Aorta e Artérias Pulmonares)
+            // Se houver contraste fase arterial injetado, eles devem brilhar branco
+            let vesselColor = (simState.contrastPhase === "arterial") ? colors.hyperdensity : colors.fluid;
+            ctx.fillStyle = vesselColor;
+
+            // Aorta Ascendente
+            ctx.beginPath();
+            ctx.arc(180, 175, 14, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Tronco Pulmonar que se ramifica no Slice 5
+            if (current >= 4 && current <= 6) {
+                ctx.beginPath();
+                ctx.ellipse(200, 210, 28, 11, -Math.PI/6, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // PATOLOGIA: Tromboembolismo Pulmonar (TEP) - Falha de enchimento escura no tronco arterial
+            // Somente visível no Slice 5 se houver Contraste e a Janela for de Pulmão/Angio
+            if (current === 5 && simState.contrastPhase === "arterial") {
+                // Sombra de coágulo escuro dentro da artéria brilhante
+                ctx.fillStyle = colors.air;
+                ctx.beginPath();
+                ctx.ellipse(195, 212, 10, 6, -Math.PI/6, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Desenha cortes abdominais - Fígado, Vértebras, Rim e Apêndice Inflamado (Caso 3)
+        function drawAbdomenCTSlice(colors) {
+            const current = simState.currentSlice;
+
+            // Contorno do Abdômen
+            ctx.fillStyle = colors.fat;
+            ctx.beginPath();
+            ctx.ellipse(200, 200, 170, 130, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Vértebra Lombar posterior
+            ctx.fillStyle = colors.bone;
+            ctx.fillRect(182, 290, 36, 26);
+
+            // Fígado no quadrante superior direito (Lado esquerdo do canvas)
+            if (current <= 6) {
+                ctx.fillStyle = colors.tissue;
+                ctx.beginPath();
+                ctx.ellipse(130, 160, 85, 55, Math.PI/12, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Alças de Intestino e Cólon (Com ar ou líquido dependendo de fase)
+            ctx.fillStyle = colors.fluid;
+            for (let i = 0; i < 5; i++) {
+                ctx.beginPath();
+                ctx.arc(170 + i * 25, 180 + (i % 2) * 20, 15, 0, Math.PI * 2);
+                ctx.fill();
+                // Bolhas de gás intestinal escuro
+                ctx.fillStyle = colors.air;
+                ctx.beginPath();
+                ctx.arc(172 + i * 25, 182 + (i % 2) * 20, 6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = colors.fluid;
+            }
+
+            // PATOLOGIA: Apendicite Aguda em fossa ilíaca direita (Slice 8)
+            // O apêndice se apresenta como estrutura tubular ('alvo') no quadrante inferior direito
+            // Com contraste venoso venoso, a parede do apêndice realça muito de branco
+            if (current === 8) {
+                let wallColor = (simState.contrastPhase === "venous") ? colors.hyperdensity : colors.tissue;
+               
+                // Gordura borrada cinza ao redor (densificação inflamatória)
+                ctx.fillStyle = colors.fluid;
+                ctx.beginPath();
+                ctx.ellipse(135, 285, 22, 18, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Parede inflada do Apêndice
+                ctx.fillStyle = wallColor;
+                ctx.beginPath();
+                ctx.arc(135, 285, 12, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Centro necrótico do apêndice (escuro)
+                ctx.fillStyle = colors.fat;
+                ctx.beginPath();
+                ctx.arc(135, 285, 6, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Aplica ruído digital médico em tempo real no Canvas baseado no mAs (Dose)
+        function applyScannerImageNoise() {
+            const width = 400;
+            const height = 400;
+
+            // Densidade e contraste do ruído variam inversamente ao mAs/kVp
+            const noiseIntensity = Math.max(1, Math.min(15, Math.round(simState.noise * 4)));
+            ctx.fillStyle = `rgba(255, 255, 255, ${simState.noise / 38})`;
+
+            for (let i = 0; i < width; i += 4) {
+                for (let j = 0; j < height; j += 4) {
+                    if (Math.random() < 0.15) {
+                        ctx.fillRect(i, j, 2, 2);
+                    }
+                }
+            }
+        }
+
+        // Captura o clique do jogador para marcar o diagnóstico
+        function markPathologyLocation(event) {
+            if (!simState.hasScanned) return;
+
+            const rect = canvas.getBoundingClientRect();
+            // Calcula coordenadas relativas ao viewBox do canvas de 400x400
+            const x = ((event.clientX - rect.left) / rect.width) * 400;
+            const y = ((event.clientY - rect.top) / rect.height) * 400;
+
+            simState.markedCoords = { x: Math.round(x), y: Math.round(y) };
+            simState.isNormalDeclared = false;
+
+            document.getElementById('read-finding-feedback').innerText = `Lesão registrada no Slice ${simState.currentSlice} em X: ${Math.round(x)}, Y: ${Math.round(y)}`;
+            document.getElementById('read-finding-feedback').className = "p-3 bg-cyan-950 rounded-xl text-center text-xs font-semibold text-cyan-400 border border-cyan-850 font-console";
+
+            drawActiveCTSlice();
+            playUiClickSound();
+        }
+
+        // Declara exame como normal
+        function diagnoseNormalScan() {
+            simState.isNormalDeclared = true;
+            simState.markedCoords = null;
+
+            document.getElementById('read-finding-feedback').innerText = "Exame laudado como padrão normal de fatias";
+            document.getElementById('read-finding-feedback').className = "p-3 bg-blue-950 rounded-xl text-center text-xs font-semibold text-blue-400 border border-blue-850 font-console";
+
+            drawActiveCTSlice();
+            playUiClickSound();
+        }
+
+        // Processa as notas do exame e avalia radioproteção ALARA
+        function submitComputedTomographyReport() {
+            if (!simState.isNormalDeclared && !simState.markedCoords) {
+                showCustomWarning("Exame Pendente", "Você precisa examinar todas as fatias, marcar a lesão ou declarar o exame como normal antes de submeter o prontuário.", "alert-triangle");
+                return;
+            }
+
+            // Validação de Diagnóstico correto
+            let diagnosticSuccess = false;
+
+            // AVC de crânio: lesão está no slice 6, cérebro sem contraste, janela mole
+            if (activeCase.id === 0) {
+                if (simState.markedCoords && simState.currentSlice === activeCase.targetSlice && simState.activeWindow === activeCase.correctWindow) {
+                    let dist = Math.hypot(simState.markedCoords.x - activeCase.pathologyCoords.x, simState.markedCoords.y - activeCase.pathologyCoords.y);
+                    if (dist <= 30) diagnosticSuccess = true;
+                }
+            }
+            // Embolia Pulmonar: slice 5, contraste arterial ativo, janela pulmão
+            else if (activeCase.id === 1) {
+                if (simState.markedCoords && simState.currentSlice === activeCase.targetSlice && simState.contrastPhase === activeCase.requiresContrast) {
+                    let dist = Math.hypot(simState.markedCoords.x - activeCase.pathologyCoords.x, simState.markedCoords.y - activeCase.pathologyCoords.y);
+                    if (dist <= 30) diagnosticSuccess = true;
+                }
+            }
+            // Apendicite: slice 8, contraste venoso ativo, janela mole
+            else if (activeCase.id === 2) {
+                if (simState.markedCoords && simState.currentSlice === activeCase.targetSlice && simState.contrastPhase === activeCase.requiresContrast && simState.activeWindow === activeCase.correctWindow) {
+                    let dist = Math.hypot(simState.markedCoords.x - activeCase.pathologyCoords.x, simState.markedCoords.y - activeCase.pathologyCoords.y);
+                    if (dist <= 30) diagnosticSuccess = true;
+                }
+            }
+
+            // Avaliação de Radioproteção ALARA (Baseada na dose acumulada estimada)
+            let alaraScore = 100;
+            if (simState.ctdivol > activeCase.targetDose) {
+                let excess = simState.ctdivol - activeCase.targetDose;
+                alaraScore = 100 - (excess * 1.2);
+                if (alaraScore < 10) alaraScore = 10;
+            }
+
+            // Atualiza placares de carreira
+            let xpEarned = 0;
+            if (diagnosticSuccess) xpEarned += 600;
+            xpEarned += Math.round(alaraScore * 3);
+            if (simState.sliceThickness === activeCase.perfectThickness) xpEarned += 100; // Bônus de espessura de corte ideal
+
+            globalScore += xpEarned;
+            casesCompleted++;
+            totalDoseExp += simState.ctdivol;
+
+            updateScores();
+
+            // Bloqueia caso realizado no menu
+            // Exibe tela final de feedback
+            showFeedbackScreen(simState.ctdivol, simState.noise, alaraScore, diagnosticSuccess);
+        }
+
+        function showFeedbackScreen(dose, noise, alara, success) {
+            document.getElementById('feedback-dose').innerText = `${dose.toFixed(1)} mGy`;
+            document.getElementById('feedback-noise').innerText = `${noise.toFixed(2)}%`;
+           
+            const diagLabel = document.getElementById('feedback-diagnostic');
+            if (success) {
+                diagLabel.innerText = "Exato / Correto";
+                diagLabel.className = "text-lg text-emerald-400 font-bold";
+            } else {
+                diagLabel.innerText = "Incorreto";
+                diagLabel.className = "text-lg text-rose-500 font-bold";
+            }
+
+            document.getElementById('feedback-educational-text').innerText = activeCase.medicalExplanation;
+
+            const iconContainer = document.getElementById('feedback-icon-container');
+            const title = document.getElementById('feedback-title');
+
+            if (success && alara >= 80) {
+                iconContainer.className = "inline-flex p-4 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-2";
+                iconContainer.innerHTML = `<i data-lucide="award" class="w-12 h-12"></i>`;
+                title.innerText = "Excelente Prática de Tomografia!";
+                confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+                playSuccessChime();
+            } else if (success && alara < 80) {
+                iconContainer.className = "inline-flex p-4 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 mb-2";
+                iconContainer.innerHTML = `<i data-lucide="shield-alert" class="w-12 h-12"></i>`;
+                title.innerText = "Diagnóstico OK, mas dose excedeu o ALARA!";
+                playFailBeep();
+            } else {
+                iconContainer.className = "inline-flex p-4 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 mb-2";
+                iconContainer.innerHTML = `<i data-lucide="heart-crack" class="w-12 h-12"></i>`;
+                title.innerText = "Falha de Interpretação Tomográfica";
+                playFailBeep();
+            }
+
+            lucide.createIcons();
+            changeScreen('screen-feedback');
+        }
+
+        // Efeitos de som nativos por Tone.js
+        function playUiClickSound() {
+            try {
+                const osc = new Tone.Oscillator(520, "sine").toDestination();
+                osc.start();
+                setTimeout(() => osc.stop(), 40);
+            } catch (e) {}
+        }
+
+        function playSuccessChime() {
+            try {
+                const synth = new Tone.Synth().toDestination();
+                const now = Tone.now();
+                synth.triggerAttackRelease("D4", "8n", now);
+                synth.triggerAttackRelease("F#4", "8n", now + 0.1);
+                synth.triggerAttackRelease("A4", "8n", now + 0.2);
+                synth.triggerAttackRelease("D5", "4n", now + 0.3);
+            } catch (e) {}
+        }
+
+        function playFailBeep() {
+            try {
+                const synth = new Tone.Synth().toDestination();
+                synth.triggerAttackRelease("G3", "3n");
+            } catch (e) {}
+        }
+
+        function updateScores() {
+            document.getElementById('score-val').innerText = globalScore;
+
+            const rating = document.getElementById('dose-avg-badge');
+            if (globalScore >= 1600) {
+                rating.innerText = "Supervisor de TC";
+                rating.className = "text-cyan-400 text-sm font-bold";
+            } else if (globalScore >= 800) {
+                rating.innerText = "Técnico Sênior";
+                rating.className = "text-cyan-400 text-sm font-bold";
+            } else {
+                rating.innerText = "Residente Júnior";
+                rating.className = "text-amber-400 text-sm font-bold";
+            }
+        }
+
+        // Alertas customizados bonitos
+        function showCustomWarning(title, description, iconName = "alert-circle") {
+            const warningBox = document.createElement('div');
+            warningBox.id = "custom-warning-modal";
+            warningBox.className = "fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4";
+            warningBox.innerHTML = `
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 max-w-sm w-full shadow-2xl text-center space-y-4">
+                    <div class="inline-flex p-3 bg-cyan-500/10 rounded-full text-cyan-400 border border-cyan-500/20">
+                        <i data-lucide="${iconName}" class="w-10 h-10"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-100">${title}</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">${description}</p>
+                    <button onclick="document.getElementById('custom-warning-modal').remove()" class="w-full py-3 bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-bold rounded-xl transition">
+                        Retornar ao Console
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(warningBox);
+            lucide.createIcons();
+        }
+
+        function backToMenu() {
+            changeScreen('screen-cases');
+        }
+
+        function goToCasesSelect() {
+            changeScreen('screen-cases');
+        }
+
+        window.onload = function() {
+            lucide.createIcons();
+            updateScores();
+        };
+    </script>
+</body>
+</html>
