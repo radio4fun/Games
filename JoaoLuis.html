@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NeuroScan Quiz</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- Boas-vindas + carregamento disfarçado (fetch em paralelo) -->
+    <div id="welcome-overlay" class="overlay overlay--welcome" aria-hidden="false">
+      <div class="overlay-card">
+        <div class="overlay-brand">NeuroScan</div>
+        <h2 class="overlay-title">Bem-vindo ao quiz neurológico</h2>
+        <p class="overlay-sub">
+          As perguntas são geradas com IA para testar seu conhecimento na área.
+          Enquanto você lê, já estamos preparando as perguntas para você.
+        </p>
+        <div class="overlay-hint" id="welcome-loading-hint">
+          <span class="pulse-dot" aria-hidden="true"></span>
+          <span id="welcome-status-text">Sincronizando com o servidor…</span>
+        </div>
+        <button type="button" id="start-quiz-button" class="btn btn-primary btn-large">
+          Iniciar quiz
+        </button>
+        <p id="welcome-error" class="overlay-error hidden" role="alert"></p>
+      </div>
+    </div>
+
+    <!-- Aguardar se clicou em iniciar antes das perguntas carregarem -->
+    <div
+      id="waiting-overlay"
+      class="overlay overlay--waiting hidden"
+      aria-hidden="true"
+    >
+      <div class="overlay-card">
+        <div class="spinner" aria-hidden="true"></div>
+        <h2 class="overlay-title">Quase lá</h2>
+        <p class="overlay-sub">
+          Aguarde um momento — as perguntas estão sendo geradas pela IA. Isso
+          pode levar alguns segundos dependendo da quantidade de imagens.
+        </p>
+        <button type="button" id="waiting-back-button" class="btn btn-secondary">
+          Voltar
+        </button>
+      </div>
+    </div>
+
+    <div class="app" id="main-app">
+      <header class="app-header">
+        <h1>NeuroScan Quiz</h1>
+        <p>Treine seu conhecimento de maneira interativa com nosso sistema.</p>
+      </header>
+
+      <div
+        id="warnings-banner"
+        class="warnings-banner hidden"
+        role="region"
+        aria-label="Avisos sobre arquivos e imagens"
+      >
+        <div class="warnings-banner-header">
+          <span class="warnings-banner-title">Avisos</span>
+          <button
+            type="button"
+            id="warnings-dismiss"
+            class="warnings-dismiss"
+            aria-label="Fechar avisos"
+          >
+            ✕
+          </button>
+        </div>
+        <ul id="warnings-list" class="warnings-list"></ul>
+      </div>
+
+      <main class="quiz-card">
+        <!-- Perguntas -->
+        <div id="quiz-question-view">
+          <div id="progress" class="progress">
+            <span id="question-counter">Pergunta 1 / 1</span>
+            <div class="progress-bar">
+              <div id="progress-bar-fill" class="progress-bar-fill"></div>
+            </div>
+          </div>
+
+          <div class="image-wrapper">
+            <img
+              id="question-image"
+              src=""
+              alt=""
+              class="question-image"
+            />
+          </div>
+
+          <div id="question-text" class="question-text">
+            Carregando pergunta...
+          </div>
+
+          <div id="options-container" class="options-container"></div>
+
+          <div class="controls">
+            <button id="next-button" class="btn btn-primary" disabled>
+              Próxima
+            </button>
+            <button id="restart-button" class="btn btn-secondary hidden">
+              Reiniciar quiz
+            </button>
+          </div>
+
+          <div id="feedback" class="feedback"></div>
+        </div>
+
+        <!-- Resultado final (sem área de imagem) -->
+        <div id="quiz-results-view" class="quiz-results hidden" aria-live="polite">
+          <div class="results-hero">
+            <div id="results-icon" class="results-icon" aria-hidden="true">✓</div>
+            <h2 class="results-title">Quiz concluído</h2>
+            <p class="results-subtitle">Confira seu desempenho</p>
+          </div>
+          <div class="results-grid">
+            <div class="results-stat">
+              <span class="results-stat-value" id="results-score-value">0</span>
+              <span class="results-stat-label">Acertos</span>
+            </div>
+            <div class="results-stat">
+              <span class="results-stat-value" id="results-total-value">0</span>
+              <span class="results-stat-label">Total</span>
+            </div>
+            <div class="results-stat results-stat--wide">
+              <span class="results-stat-value" id="results-percent-value">0%</span>
+              <span class="results-stat-label">Aproveitamento</span>
+            </div>
+          </div>
+          <p id="results-message" class="results-message"></p>
+          <p id="results-merge-status" class="results-merge-status hidden" role="status"></p>
+          <div class="results-actions results-actions--stack">
+            <button type="button" id="results-restart-button" class="btn btn-primary btn-large">
+              Fazer de novo
+            </button>
+            <button
+              type="button"
+              id="results-load-new-button"
+              class="btn btn-secondary btn-large"
+            >
+              Carregar novas imagens da pasta
+            </button>
+          </div>
+        </div>
+      </main>
+
+      <footer class="app-footer">
+        <span
+          >Rodando localmente • Adicione suas imagens em
+          <code>assets/imagem-1.png</code>,
+          <code>imagem-2.png</code>, ...</span
+        >
+      </footer>
+    </div>
+
+    <script src="quiz.js"></script>
+  </body>
+</html>

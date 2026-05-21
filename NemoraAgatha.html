@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desafio de Física Radiológica: Raios X</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body {
+font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+background-color: #f0fdf4; /* Light green background */
+}
+.fade-in {
+animation: fadeIn 0.5s ease-in-out;
+}
+@keyframes fadeIn {
+from { opacity: 0; transform: translateY(10px); }
+to { opacity: 1; transform: translateY(0); }
+}
+.option-btn {
+transition: all 0.2s;
+}
+.option-btn:hover:not(:disabled) {
+transform: scale(1.02);
+box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+</style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+<div class="bg-white rounded-2xl shadow-xl p-8 max-w-2xl w-full">
+
+<!-- Header -->
+<div class="text-center mb-8">
+<h1 class="text-3xl font-bold text-green-800 mb-2">Física Radiológica</h1>
+<p class="text-gray-600">Teste seus conhecimentos sobre a produção e interação de Raios X.</p>
+</div>
+
+<!-- Quiz Container -->
+<div id="quiz-container" class="space-y-6">
+
+<!-- Progress Bar -->
+<div class="w-full bg-gray-200 rounded-full h-2.5 mb-6">
+<div id="progress-bar" class="bg-green-600 h-2.5 rounded-full" style="width: 0%"></div>
+</div>
+
+<!-- Question and Options Area -->
+<div id="question-area" class="fade-in">
+<h2 id="question-text" class="text-xl font-semibold text-gray-800 mb-6 min-h-[4rem]">
+Carregando pergunta...
+</h2>
+<div id="options-container" class="space-y-3">
+<!-- Options will be injected here -->
+</div>
+</div>
+
+<!-- Feedback Area (Hidden initially) -->
+<div id="feedback-area" class="hidden mt-6 p-4 rounded-lg border">
+<p id="feedback-message" class="font-semibold mb-2"></p>
+<p id="feedback-explanation" class="text-sm text-gray-700"></p>
+<button id="next-btn" class="mt-4 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors hidden">
+Próxima Pergunta
+</button>
+</div>
+</div>
+
+<!-- Results Container (Hidden initially) -->
+<div id="results-container" class="hidden text-center fade-in">
+<h2 class="text-2xl font-bold text-gray-800 mb-4">Quiz Concluído!</h2>
+<div class="mb-6 p-6 bg-green-50 rounded-xl border border-green-200">
+<p class="text-lg text-gray-700 mb-2">Sua pontuação:</p>
+<p class="text-5xl font-bold text-green-700 mb-2">
+<span id="score-display">0</span>/<span id="total-display">10</span>
+</p>
+<p id="performance-message" class="text-gray-600 italic"></p>
+</div>
+
+<!-- Detailed Results (Optional, but good for learning) -->
+<div class="text-left mb-6 max-h-64 overflow-y-auto pr-2" id="detailed-results">
+<h3 class="font-semibold text-gray-700 mb-3 sticky top-0 bg-white py-2 border-b">Revisão:</h3>
+<ul id="review-list" class="space-y-4 text-sm">
+<!-- Review items injected here -->
+</ul>
+</div>
+
+<button onclick="initQuiz()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors shadow-md">
+Tentar Novamente
+</button>
+</div>
+
+</div>
+
+<script>
+// --- DATA: Quiz Questions ---
+const questions = [
+{
+question: "Qual é o principal processo responsável pela produção de raios X em um tubo de diagnóstico, resultante da desaceleração de elétrons próximos ao núcleo do alvo?",
+options: [
+"Radiação Característica",
+"Radiação de Freamento (Bremsstrahlung)",
+"Efeito Compton",
+"Efeito Fotoelétrico"
+],
+answer: 1, // Index of correct option
+explanation: "Bremsstrahlung (freamento) ocorre quando os elétrons do cátodo desaceleram ao interagir com o campo elétrico dos núcleos do alvo (ânodo), convertendo sua energia cinética em fótons de raios X. É a principal fonte de raios X em diagnósticos."
+},
+{
+question: "Ao aumentar a corrente do tubo (mA), o que acontece com o feixe de raios X produzido?",
+options: [
+"Aumenta a energia máxima dos fótons.",
+"Aumenta o poder de penetração do feixe.",
+"Aumenta a quantidade (intensidade) de fótons.",
+"Diminui a quantidade de fótons de baixa energia."
+],
+answer: 2,
+explanation: "O mAs (corrente x tempo) controla o número de elétrons que fluem do cátodo para o ânodo, afetando diretamente a quantidade (intensidade) de raios X produzidos, sem alterar sua energia (qualidade)."
+},
+{
+question: "Qual interação da radiação com a matéria é a principal responsável pelo contraste radiográfico em energias diagnósticas mais baixas?",
+options: [
+"Espalhamento Coerente (Rayleigh)",
+"Efeito Compton",
+"Efeito Fotoelétrico",
+"Produção de Pares"
+],
+answer: 2,
+explanation: "O Efeito Fotoelétrico é fortemente dependente do número atômico (Z) do tecido absorvedor. Como osso tem Z maior que tecido mole, ele absorve muito mais radiação fotoelétrica, gerando o contraste claro/escuro na imagem."
+},
+{
+question: "O 'Efeito de Talão' (Heel Effect) resulta em uma intensidade de radiação desigual. Em qual lado do tubo a intensidade é maior?",
+options: [
+"No lado do Ânodo",
+"No lado do Cátodo",
+"No centro do campo",
+"A intensidade é igual em todos os lados"
+],
+answer: 1,
+explanation: "Devido à inclinação do alvo do ânodo, os raios X produzidos mais 'dentro' do alvo têm que atravessar mais material do próprio ânodo para sair. Isso absorve parte da radiação, tornando o feixe mais fraco no lado do ânodo e mais forte no lado do cátodo."
+},
+{
+question: "Qual é a finalidade da filtração de alumínio colocada na saída do feixe de raios X?",
+options: [
+"Aumentar o número total de fótons.",
+"Focar os elétrons no ponto focal.",
+"Endurecer o feixe de radiação.",
+"Resfriar o tubo de raios X."
+],
+answer: 2,
+explanation: "A filtração remove preferencialmente os fótons de baixa energia ('moles') que não contribuiriam para a imagem, mas aumentariam a dose no paciente. Isso aumenta a energia média do feixe remanescente ('endurecimento')."
+},
+{
+question: "A Camada Semirredutora (CSR ou HVL) é uma medida que define qual característica do feixe?",
+options: [
+"A intensidade total.",
+"O tamanho do ponto focal.",
+"A qualidade ou poder de penetração.",
+"A quantidade de calor gerada."
+],
+answer: 2,
+explanation: "A CSR é a espessura de um material (geralmente Alumínio em diagnóstico) necessária para reduzir a intensidade do feixe de raios X à metade. É o melhor descritor da 'qualidade' (energia/poder de penetração) do feixe."
+},
+{
+question: "No espalhamento Compton, o fóton incidente interage com:",
+options: [
+"Um elétron das camadas internas (K ou L).",
+"Um elétron das camadas externas (fracamente ligado).",
+"O campo elétrico do núcleo sem perder energia.",
+"O núcleo diretamente, sendo totalmente absorvido."
+],
+answer: 1,
+explanation: "No efeito Compton, o fóton interage com um elétron das camadas externas (considerado 'livre'), ejetando-o. O fóton perde parte de sua energia e é espalhado em uma nova direção. É a principal causa de radiação espalhada e ruído na imagem."
+},
+{
+question: "Se a distância entre a fonte de radiação e o receptor for dobrada, como a intensidade da radiação será afetada?",
+options: [
+"Será reduzida à metade.",
+"Será reduzida a um quarto.",
+"Permanecerá a mesma.",
+"Dobrará."
+],
+answer: 1,
+explanation: "De acordo com a Lei do Inverso do Quadrado da Distância (I1/I2 = D2²/D1²), se a distância dobra, a intensidade é dividida pelo quadrado de 2 (2² = 4). Portanto, cai para 1/4 da intensidade original."
+},
+{
+question: "Qual é a função do filamento no cátodo do tubo de raios X?",
+options: [
+"Frear os elétrons incidentes.",
+"Dissipar o calor gerado no impacto.",
+"Girar o alvo para evitar superaquecimento.",
+"Fornecer elétrons através da emissão termoiônica."
+],
+answer: 3,
+explanation: "O filamento (geralmente de tungstênio) é aquecido por uma corrente elétrica. Ao ficar muito quente, ele 'ferve' elétrons de sua superfície (emissão termoiônica), criando a nuvem de elétrons necessária para a produção de raios X."
+},
+{
+question: "A radiação característica ocorre quando:",
+options: [
+"O elétron incidente perde velocidade ao passar perto do núcleo.",
+"Um elétron incidente retira um elétron de uma camada interna e um elétron de uma camada externa preenche a lacuna.",
+"Um fóton é totalmente absorvido por um elétron da camada K.",
+"Um fóton espalha-se sem perda de energia."
+],
+answer: 1,
+explanation: "Quando um elétron do cátodo ejeta um elétron da camada interna do átomo do alvo (ex: camada K), cria-se uma vacância. Um elétron de uma camada mais externa cai para preencher a vaga, emitindo a diferença de energia como um fóton de raio X 'característico' do material."
+}
+];
+
+// --- STATE VARIABLES ---
+let currentQuestionIndex = 0;
+let score = 0;
+let answered = false;
+let userAnswersHistory = [];
+
+// --- DOM ELEMENTS ---
+const questionText = document.getElementById('question-text');
+const optionsContainer = document.getElementById('options-container');
+const progressBar = document.getElementById('progress-bar');
+const feedbackArea = document.getElementById('feedback-area');
+const feedbackMessage = document.getElementById('feedback-message');
+const feedbackExplanation = document.getElementById('feedback-explanation');
+const nextBtn = document.getElementById('next-btn');
+const quizContainer = document.getElementById('quiz-container');
+const resultsContainer = document.getElementById('results-container');
+const scoreDisplay = document.getElementById('score-display');
+const totalDisplay = document.getElementById('total-display');
+const questionArea = document.getElementById('question-area');
+const reviewList = document.getElementById('review-list');
+const performanceMessage = document.getElementById('performance-message');
+
+// --- FUNCTIONS ---
+
+function initQuiz() {
+// Reset state
+currentQuestionIndex = 0;
+score = 0;
+userAnswersHistory = [];
+
+// Toggle visibility
+resultsContainer.classList.add('hidden');
+quizContainer.classList.remove('hidden');
+totalDisplay.textContent = questions.length;
+
+// Clear review list
+reviewList.innerHTML = '';
+
+loadQuestion();
+}
+
+function loadQuestion() {
+const currentQ = questions[currentQuestionIndex];
+answered = false;
+
+// Update progress bar
+const progress = (currentQuestionIndex / questions.length) * 100;
+progressBar.style.width = `${progress}%`;
+
+// Setup Question Text
+questionText.textContent = `${currentQuestionIndex + 1}. ${currentQ.question}`;
+
+// Clear previous options and feedback
+optionsContainer.innerHTML = '';
+feedbackArea.classList.add('hidden');
+nextBtn.classList.add('hidden');
+
+// Trigger reflow to restart fade-in animation
+questionArea.classList.remove('fade-in');
+void questionArea.offsetWidth;
+questionArea.classList.add('fade-in');
+
+// Create option buttons
+currentQ.options.forEach((option, index) => {
+const button = document.createElement('button');
+button.className = 'option-btn w-full text-left p-4 rounded-lg border border-gray-300 hover:border-green-500 bg-gray-50 focus:outline-none';
+button.textContent = option;
+button.onclick = () => handleOptionClick(index);
+optionsContainer.appendChild(button);
+});
+}
+
+function handleOptionClick(selectedIndex) {
+if (answered) return; // Prevent multiple clicks
+answered = true;
+
+const currentQ = questions[currentQuestionIndex];
+const buttons = optionsContainer.children;
+const isCorrect = selectedIndex === currentQ.answer;
+
+// Record history
+userAnswersHistory.push({
+question: currentQ.question,
+userAnswer: currentQ.options[selectedIndex],
+correctAnswer: currentQ.options[currentQ.answer],
+isCorrect: isCorrect
+});
+
+// Update UI for buttons
+for (let i = 0; i < buttons.length; i++) {
+buttons[i].disabled = true; // Disable all
+buttons[i].classList.remove('hover:border-green-500', 'cursor-pointer');
+
+if (i === currentQ.answer) {
+// Correct answer
+buttons[i].classList.remove('border-gray-300', 'bg-gray-50');
+buttons[i].classList.add('border-green-500', 'bg-green-100', 'text-green-800', 'font-semibold');
+} else if (i === selectedIndex && !isCorrect) {
+// Wrong selected answer
+buttons[i].classList.remove('border-gray-300', 'bg-gray-50');
+buttons[i].classList.add('border-red-500', 'bg-red-50', 'text-red-700');
+} else {
+// Other options fade slightly
+buttons[i].classList.add('opacity-50');
+}
+}
+
+// Show feedback
+feedbackArea.classList.remove('hidden');
+if (isCorrect) {
+score++;
+feedbackMessage.textContent = "Correto! ✅";
+feedbackMessage.className = "font-bold text-green-700 text-lg mb-2";
+feedbackArea.className = "mt-6 p-4 rounded-lg border bg-green-50 border-green-200 fade-in";
+} else {
+feedbackMessage.textContent = "Incorreto. ❌";
+feedbackMessage.className = "font-bold text-red-700 text-lg mb-2";
+feedbackArea.className = "mt-6 p-4 rounded-lg border bg-red-50 border-red-200 fade-in";
+}
+feedbackExplanation.textContent = currentQ.explanation;
+
+// Show Next Button
+nextBtn.classList.remove('hidden');
+}
+
+nextBtn.addEventListener('click', () => {
+currentQuestionIndex++;
+if (currentQuestionIndex < questions.length) {
+loadQuestion();
+} else {
+showResults();
+}
+});
+
+function showResults() {
+quizContainer.classList.add('hidden');
+resultsContainer.classList.remove('hidden');
+
+// Final progress bar full
+progressBar.style.width = '100%';
+
+scoreDisplay.textContent = score;
+
+// Performance message logic
+let message = "";
+if (score === questions.length) {
+message = "Perfeito! Você é um expert em Física Radiológica!";
+} else if (score >= 7) {
+message = "Muito bom! Você tem um ótimo conhecimento da matéria.";
+} else if (score >= 5) {
+message = "Bom, mas ainda pode melhorar. Que tal revisar os conceitos?";
+} else {
+message = "Parece que você precisa estudar um pouco mais sobre Raios X.";
+}
+performanceMessage.textContent = message;
+
+// Populate Review List
+userAnswersHistory.forEach((item, index) => {
+const li = document.createElement('li');
+li.className = `p-3 rounded border ${item.isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`;
+
+li.innerHTML = `
+<p class="font-semibold text-gray-800 mb-1">${index + 1}. ${item.question}</p>
+<p class="text-xs mb-1">
+<span class="text-gray-600">Sua resposta:</span>
+<span class="${item.isCorrect ? 'text-green-700 font-medium' : 'text-red-600 line-through'}">${item.userAnswer}</span>
+</p>
+${!item.isCorrect ? `<p class="text-xs"><span class="text-gray-600">Resposta correta:</span> <span class="text-green-700 font-medium">${item.correctAnswer}</span></p>` : ''}
+`;
+reviewList.appendChild(li);
+});
+}
+
+// --- INITIALIZATION ---
+initQuiz();
+
+</script>
+</body>
+</html>
