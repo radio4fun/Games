@@ -1105,5 +1105,42 @@ titleEl.innerText = title;
 messageEl.innerText = message;
 modalCallback = callback;
 
-if (type === 'success') {
-iconContainer
+ if (type === 'success') {
+                iconContainer.className = "w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-3xl mb-4";
+                icon.className = "fa-solid fa-circle-check";
+            } else {
+                iconContainer.className = "w-16 h-16 rounded-full bg-rose-500/10 text-rose-400 flex items-center justify-center text-3xl mb-4";
+                icon.className = "fa-solid fa-triangle-exclamation";
+            }
+
+            modal.classList.remove("hidden");
+        }
+
+        function closeModal() {
+            document.getElementById("custom-modal").classList.add("hidden");
+            if (modalCallback) {
+                const currentCallback = modalCallback;
+                modalCallback = null; // Limpa o callback ativo antes de chamar para evitar recursão infinita
+                currentCallback();
+            }
+        }
+
+        // Inicialização limpa ao carregar a página
+        window.onload = function() {
+            gantryMovable = document.getElementById("svg-movable-gantry");
+            canvasP6 = document.getElementById("mammogram-canvas-p6");
+            ctxP6 = canvasP6.getContext("2d");
+            
+            setPhase(1);
+            updateHeaderStats();
+        };
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
