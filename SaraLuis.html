@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CT Challenge - O Jogo da Tomografia Computadorizada</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .glow-blue {
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+        }
+        .glow-cyan {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+        }
+        .scan-line {
+            animation: scan 2.5s linear infinite;
+        }
+        @keyframes scan {
+            0% { transform: translateY(-100%); opacity: 0.8; }
+            50% { opacity: 0.3; }
+            100% { transform: translateY(100%); opacity: 0.8; }
+        }
+        /* Pulse for highlight targets */
+        .pulse-target {
+            animation: pulse-red 1.5s infinite;
+        }
+        @keyframes pulse-red {
+            0% { r: 4; opacity: 0.9; }
+            50% { r: 12; opacity: 0.4; }
+            100% { r: 4; opacity: 0.9; }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4 bg-slate-900 overflow-x-hidden">
+
+    <!-- CONTENTOR DO JOGO (Formato mobile de alta fidelidade) -->
+    <div id="app" class="relative w-full max-w-md h-[840px] bg-slate-950 text-slate-100 rounded-3xl overflow-hidden shadow-2xl border border-slate-800 flex flex-col justify-between">
+        
+        <!-- CABEÇALHO COMPACTO -->
+        <header id="game-header" class="hidden px-6 pt-5 pb-3 bg-slate-900/40 border-b border-slate-800/80 backdrop-blur-md z-10">
+            <div class="flex justify-between items-center">
+                <div>
+                    <span class="text-[10px] text-cyan-400 font-extrabold tracking-widest uppercase">CASO <span id="header-level">1</span> DE 4</span>
+                    <h1 class="text-base font-black text-white">CT Challenge</h1>
+                </div>
+                <div class="flex items-center gap-2">
+                    <!-- Pontos -->
+                    <div class="bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/60 flex items-center gap-1">
+                        <span class="text-[10px] text-yellow-400">★</span>
+                        <span id="header-score" class="text-xs font-bold text-slate-200">0</span>
+                    </div>
+                    <!-- Tempo (1 min de limite) -->
+                    <div id="timer-box" class="bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/60 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+                        <span id="header-timer" class="text-xs font-bold text-slate-200">60s</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Barra de Progresso Compacta -->
+            <div class="w-full bg-slate-800 h-1.5 rounded-full mt-3 overflow-hidden">
+                <div id="header-progress" class="bg-gradient-to-r from-blue-500 to-cyan-400 h-full w-0 transition-all duration-300"></div>
+            </div>
+        </header>
+
+        <!-- ÁREA PRINCIPAL DE CONTEÚDO -->
+        <main class="flex-1 flex flex-col justify-center px-6 py-3 overflow-y-auto relative">
+            
+            <!-- ECRÃ 1: INÍCIO / HOME -->
+            <div id="screen-start" class="flex flex-col items-center text-center justify-between h-full py-8">
+                <div class="space-y-4 my-auto">
+                    <!-- Gantry Scanner Holográfico -->
+                    <div class="relative w-40 h-40 mx-auto mb-4 flex items-center justify-center">
+                        <div class="absolute inset-0 border-4 border-dashed border-cyan-500/30 rounded-full animate-[spin_30s_linear_infinite]"></div>
+                        <div class="absolute w-32 h-32 border-2 border-blue-500/50 rounded-full flex items-center justify-center glow-blue">
+                            <div class="w-24 h-24 bg-slate-900 border border-slate-700 rounded-full flex items-center justify-center overflow-hidden relative">
+                                <svg class="w-12 h-12 text-cyan-400 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                </svg>
+                                <div class="scan-line absolute inset-0 w-full h-0.5 bg-cyan-400 glow-cyan"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h1 class="text-4xl font-black tracking-tight text-white">CT <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">Challenge</span></h1>
+                    <p class="text-slate-400 text-xs max-w-xs mx-auto leading-relaxed">
+                        Aprenda tomografia interpretando casos visuais e fraturas críticas. Rápido, visual e educativo!
+                    </p>
+                </div>
+
+                <div class="w-full space-y-3 mt-auto">
+                    <button id="btn-play" class="w-full py-3.5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-xl hover:from-blue-500 hover:to-cyan-400 transition-all duration-200 shadow-lg shadow-cyan-500/20 text-base active:scale-95 transform">
+                        Entrar no Plantão
+                    </button>
+                    <button id="btn-tutorial" class="w-full py-2.5 bg-slate-900/80 hover:bg-slate-800 text-slate-300 font-semibold rounded-xl border border-slate-800 text-xs transition-all">
+                        Guia Rápido
+                    </button>
+                </div>
+            </div>
+
+            <!-- ECRÃ 2: TUTORIAL -->
+            <div id="screen-tutorial" class="hidden flex flex-col justify-between h-full py-4">
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <button id="btn-tut-back" class="p-1.5 bg-slate-900 rounded-lg border border-slate-800 text-slate-400 hover:text-white">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                        </button>
+                        <h2 class="text-base font-bold text-white">Guia de Instruções</h2>
+                    </div>
+
+                    <div class="space-y-3 text-slate-300 text-xs">
+                        <div class="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800/80 flex gap-3">
+                            <span class="text-xl">🩺</span>
+                            <div>
+                                <h4 class="font-bold text-cyan-400">1. Analisar Região</h4>
+                                <p class="text-slate-400 mt-0.5">Veja o modelo anatômico luminoso com o local do sintoma e escolha o protocolo correto.</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800/80 flex gap-3">
+                            <span class="text-xl">⚡</span>
+                            <div>
+                                <h4 class="font-bold text-blue-400">2. Responder Teoria</h4>
+                                <p class="text-slate-400 mt-0.5">Resolva perguntas de física ou dosagem para obter pontos e multiplicadores.</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800/80 flex gap-3">
+                            <span class="text-xl">🎯</span>
+                            <div>
+                                <h4 class="font-bold text-purple-400">3. Laudo de Imagem</h4>
+                                <p class="text-slate-400 mt-0.5">Analise o exame de tomografia no monitor e toque diretamente na patologia/fratura.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="btn-tut-start" class="w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider">
+                    Começar Desafio
+                </button>
+            </div>
+
+            <!-- ECRÃ 3: PACIENTE E MAPA ANATÓMICO (ALTAMENTE VISUAL) -->
+            <div id="screen-case" class="hidden flex flex-col justify-between h-full py-1">
+                <div class="space-y-3">
+                    
+                    <!-- Painel Médico & Mapa Anatómico -->
+                    <div class="bg-slate-900/80 rounded-2xl border border-slate-800 p-4 space-y-3 relative overflow-hidden flex flex-col items-center">
+                        <!-- ID Médico do Paciente -->
+                        <div class="flex justify-between items-center w-full">
+                            <div class="flex items-center gap-2">
+                                <span id="patient-avatar-icon" class="text-lg">🧑‍⚕️</span>
+                                <div>
+                                    <h3 id="patient-display-name" class="text-sm font-bold text-white">Roberto Almeida</h3>
+                                    <span id="patient-display-meta" class="text-[10px] text-slate-400 block">58 anos</span>
+                                </div>
+                            </div>
+                            <span class="text-[9px] bg-red-950/80 border border-red-700/50 text-red-400 px-2 py-0.5 rounded font-extrabold tracking-wider uppercase">EMERGÊNCIA</span>
+                        </div>
+
+                        <!-- Sintoma & Queixa Compacta -->
+                        <div class="bg-slate-950/60 border border-slate-800/50 p-2.5 rounded-lg w-full text-center">
+                            <p id="patient-clinical-complaint" class="text-xs text-cyan-200 font-medium leading-relaxed italic">
+                                "Cefaleia súbita e intensa há 2 horas. Descartar sangramento ou isquemia."
+                            </p>
+                        </div>
+
+                        <!-- VISUALIZADOR ANATÓMICO (SVG DINÂMICO) -->
+                        <div class="w-full h-44 bg-slate-950 rounded-xl border border-slate-800/80 flex items-center justify-center p-2 relative">
+                            <div class="absolute top-2 left-2 text-[9px] font-mono tracking-widest text-slate-500 uppercase">Holograma Anatómico</div>
+                            <div id="anatomy-vector-container" class="w-full h-full flex items-center justify-center">
+                                <!-- O vetor correspondente à área será injetado aqui -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pergunta/Instrução -->
+                    <div class="text-center text-xs text-slate-400 font-semibold bg-slate-900/20 py-1.5 rounded-lg border border-slate-800/30">
+                        Selecione o melhor Protocolo de Reconstrução:
+                    </div>
+
+                    <div id="case-options" class="grid grid-cols-1 gap-2">
+                        <!-- Opções injetadas dinamicamente -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ECRÃ 4: TRIVIA COMPACTA -->
+            <div id="screen-trivia" class="hidden flex flex-col justify-between h-full py-1">
+                <div class="space-y-4">
+                    <div class="bg-gradient-to-r from-blue-950/30 to-slate-900/60 rounded-2xl border border-blue-900/30 p-4 space-y-2 text-center">
+                        <span class="bg-blue-900/40 text-blue-400 text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-widest">
+                            Física & Proteção
+                        </span>
+                        <h3 id="trivia-question" class="text-sm font-bold text-white leading-normal">
+                            Pergunta Teórica
+                        </h3>
+                    </div>
+
+                    <div class="text-center text-[10px] text-slate-500 uppercase tracking-wider">
+                        Escolha uma alternativa rápida
+                    </div>
+
+                    <div id="trivia-options" class="grid grid-cols-1 gap-2">
+                        <!-- Opções injetadas dinamicamente -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ECRÃ 5: ANÁLISE INTERATIVA DE IMAGEM -->
+            <div id="screen-analysis" class="hidden flex flex-col justify-between h-full py-1">
+                <div class="space-y-3 flex-1 flex flex-col justify-between">
+                    <div class="bg-slate-900/60 rounded-xl border border-slate-800/80 p-2.5 text-center">
+                        <h3 class="text-xs font-bold text-white">Análise de Tomografia (Monitor Principal)</h3>
+                        <p class="text-[10px] text-slate-400 mt-0.5">Toque sobre a lesão/fratura visível na janela abaixo.</p>
+                    </div>
+
+                    <!-- Janela do Tomógrafo -->
+                    <div class="flex-1 flex flex-col items-center justify-center relative my-2">
+                        <div class="relative w-64 h-64 rounded-full overflow-hidden border-4 border-slate-800 bg-black glow-cyan">
+                            <canvas id="scan-canvas" width="256" height="256" class="cursor-crosshair block"></canvas>
+                            <div class="scan-line absolute inset-x-0 h-0.5 bg-cyan-400/40 pointer-events-none"></div>
+                        </div>
+
+                        <!-- Legendas de Cores de Tecido -->
+                        <div class="mt-2.5 flex gap-4 text-[10px] text-slate-500">
+                            <span class="flex items-center gap-1">
+                                <span class="w-2 h-2 bg-white rounded"></span> Hiperdenso (Osso / Metal / Sangue Agudo)
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <span class="w-2 h-2 bg-zinc-800 rounded"></span> Hipodenso (Ar / Fluido)
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="text-center bg-slate-900/30 border border-slate-800/40 py-1.5 rounded-xl text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                        Toque no ponto exato para fechar o laudo
+                    </div>
+                </div>
+            </div>
+
+            <!-- POPUP DE FEEDBACK MODAL -->
+            <div id="feedback-overlay" class="hidden absolute inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col justify-between p-6 z-20">
+                <div class="my-auto space-y-4 text-center">
+                    <div id="feedback-icon" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto text-3xl">
+                        ✅
+                    </div>
+                    
+                    <div class="space-y-1">
+                        <h2 id="feedback-title" class="text-xl font-black text-white">Exemplo de Título</h2>
+                        <span id="feedback-subtitle" class="text-[10px] text-cyan-400 font-extrabold uppercase tracking-widest block">Subtítulo</span>
+                    </div>
+
+                    <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl text-left">
+                        <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Análise Médica:</h4>
+                        <p id="feedback-text" class="text-xs text-slate-300 leading-relaxed">
+                            Explicação detalhada compacta.
+                        </p>
+                    </div>
+
+                    <div class="flex items-center justify-center gap-1 text-yellow-400 font-bold text-base" id="feedback-score-added-container">
+                        <span>★</span> +<span id="feedback-score-added">150</span> XP Adicionados!
+                    </div>
+                </div>
+
+                <button id="btn-feedback-next" class="w-full py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider mt-4">
+                    Continuar Operação
+                </button>
+            </div>
+
+            <!-- ECRÃ 6: RELATÓRIO DO CASO -->
+            <div id="screen-report" class="hidden flex flex-col justify-between h-full py-3">
+                <div class="space-y-4 my-auto">
+                    <div class="text-center space-y-1">
+                        <span class="inline-block bg-emerald-950/80 border border-emerald-800 text-emerald-400 text-[10px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wider">
+                            Laudo Submetido!
+                        </span>
+                        <h2 class="text-2xl font-black text-white">Paciente Estável</h2>
+                        <p class="text-slate-400 text-xs">Exame interpretado e processado com sucesso.</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-slate-900/60 border border-slate-800 p-3 rounded-xl text-center">
+                            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Pontuação Total</span>
+                            <span id="report-score" class="text-xl font-black text-white block mt-0.5">0</span>
+                        </div>
+                        <div class="bg-slate-900/60 border border-slate-800 p-3 rounded-xl text-center">
+                            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Tempo Sobra</span>
+                            <span id="report-time" class="text-xl font-black text-cyan-400 block mt-0.5">0s</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900/80 border border-slate-800/80 p-3.5 rounded-xl space-y-1">
+                        <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Resumo Clínico:</h4>
+                        <p id="report-learning" class="text-xs text-slate-300 leading-normal">
+                            Resumo didático da lição.
+                        </p>
+                    </div>
+                </div>
+
+                <button id="btn-report-next" class="w-full py-3.5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-lg">
+                    Próximo Caso do Plantão
+                </button>
+            </div>
+
+            <!-- ECRÃ 7: GAME OVER -->
+            <div id="screen-game-over" class="hidden flex flex-col justify-between h-full py-6 text-center">
+                <div class="my-auto space-y-4">
+                    <div class="w-16 h-16 bg-rose-950/40 border border-rose-800/80 rounded-full flex items-center justify-center mx-auto text-rose-500 text-3xl animate-bounce">
+                        🚨
+                    </div>
+                    <div class="space-y-1">
+                        <h2 class="text-2xl font-black text-white">Tempo Esgotado!</h2>
+                        <p class="text-slate-400 text-xs max-w-xs mx-auto">
+                            O diagnóstico demorou demasiado tempo. Na urgência médica de TC, cada segundo conta!
+                        </p>
+                    </div>
+                    <div class="bg-slate-900/80 border border-slate-800 px-6 py-3 rounded-xl inline-block">
+                        <span class="text-[10px] text-slate-500 font-bold uppercase block">Pontos Totais</span>
+                        <span id="game-over-score" class="text-2xl font-black text-white">0</span>
+                    </div>
+                </div>
+
+                <button id="btn-restart" class="w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-xl text-xs uppercase">
+                    Recomeçar Plantão
+                </button>
+            </div>
+
+            <!-- ECRÃ 8: VITÓRIA / CERTIFICADO -->
+            <div id="screen-victory" class="hidden flex flex-col justify-between h-full py-6 text-center">
+                <div class="my-auto space-y-4">
+                    <div class="w-20 h-20 bg-gradient-to-tr from-yellow-500 to-amber-300 rounded-full flex items-center justify-center mx-auto text-4xl glow-cyan animate-pulse">
+                        🏆
+                    </div>
+                    <div class="space-y-1">
+                        <h2 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">Técnico Especialista</h2>
+                        <p class="text-slate-400 text-xs max-w-xs mx-auto">
+                            Brilhante! Completou com sucesso todos os diagnósticos urgentes de imagem e fraturas do plantão.
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl max-w-xs mx-auto space-y-2">
+                        <span class="text-[9px] font-bold text-cyan-400 uppercase tracking-widest block">Licença de Tomografia</span>
+                        <div class="flex justify-between items-center text-[11px] text-slate-300 border-t border-slate-800/80 pt-2.5">
+                            <span>Pontuação:</span>
+                            <span id="victory-score" class="font-extrabold text-white text-sm">0</span>
+                        </div>
+                        <div class="flex justify-between items-center text-[11px] text-slate-300">
+                            <span>Status Clínico:</span>
+                            <span class="font-bold text-cyan-400 text-xs">Radiologista de Elite</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="btn-restart-victory" class="w-full py-3.5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-xl text-xs uppercase">
+                    Novo Plantão
+                </button>
+            </div>
+
+        </main>
+
+        <!-- RODAPÉ DA MARCA -->
+        <footer class="px-6 py-3 border-t border-slate-900 bg-slate-950 flex justify-between items-center text-[9px] text-slate-600 uppercase tracking-widest font-semibold">
+            <span>CT Challenge © 2026</span>
+            <span class="text-cyan-800">Visualização Ativa</span>
+        </footer>
+
+    </div>
+
+    <!-- JS Lógica de Jogo Altamente Visual -->
+    <script>
+        // 1. SISTEMA DE ÁUDIO WEB API
+        const soundCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playTone(freq, duration, type = 'sine') {
+            try {
+                if (soundCtx.state === 'suspended') soundCtx.resume();
+                const osc = soundCtx.createOscillator();
+                const gain = soundCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, soundCtx.currentTime);
+                gain.gain.setValueAtTime(0.12, soundCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, soundCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(soundCtx.destination);
+                osc.start();
+                osc.stop(soundCtx.currentTime + duration);
+            } catch(e) {}
+        }
+
+        function playCorrectSound() {
+            playTone(523.25, 0.1, 'sine'); // C5
+            setTimeout(() => playTone(659.25, 0.12, 'sine'), 70); // E5
+            setTimeout(() => playTone(783.99, 0.2, 'sine'), 140); // G5
+        }
+
+        function playWrongSound() {
+            playTone(290, 0.15, 'sawtooth');
+            setTimeout(() => playTone(200, 0.25, 'sawtooth'), 110);
+        }
+
+        function playClickSound() {
+            playTone(600, 0.04, 'triangle');
+        }
+
+        function playCompleteSound() {
+            playTone(520, 0.08, 'sine');
+            setTimeout(() => playTone(580, 0.08, 'sine'), 60);
+            setTimeout(() => playTone(650, 0.08, 'sine'), 120);
+            setTimeout(() => playTone(780, 0.3, 'sine'), 180);
+        }
+
+        // 2. MODELOS ANATÓMICOS VETORIAIS (Inline SVGs com Highlights Luminosos)
+        const anatomySVGs = {
+            skull: `
+                <svg viewBox="0 0 100 100" class="w-32 h-32 text-cyan-400">
+                    <!-- Head & Skull Outline -->
+                    <path d="M50,15 C28,15 22,35 22,50 C22,65 30,75 35,80 C38,83 40,85 40,88 L50,88 L60,88 C60,85 62,83 65,80 C70,75 78,65 78,50 C78,35 72,15 50,15 Z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" class="opacity-40"/>
+                    <path d="M35,62 C35,65 40,68 50,68 C60,68 65,65 65,62" fill="none" stroke="currentColor" stroke-width="2" class="opacity-30"/>
+                    <!-- Eye Cavities -->
+                    <circle cx="38" cy="48" r="8" fill="none" stroke="currentColor" stroke-width="2" class="opacity-40"/>
+                    <circle cx="62" cy="48" r="8" fill="none" stroke="currentColor" stroke-width="2" class="opacity-40"/>
+                    <!-- Nose Cavity -->
+                    <path d="M50,52 L46,60 L54,60 Z" fill="none" stroke="currentColor" stroke-width="2" class="opacity-40"/>
+                    <!-- HIGHLIGHT TARGET: CRANIAL FRACTURE ZONE -->
+                    <circle cx="73" cy="35" r="5" fill="#ef4444" class="pulse-target" />
+                    <line x1="73" y1="35" x2="65" y2="42" stroke="#ef4444" stroke-width="2" stroke-dasharray="1 1"/>
+                    <text x="50" y="98" fill="#cbd5e1" font-size="8" font-weight="bold" text-anchor="middle">Região Craniofacial</text>
+                </svg>
+            `,
+            brain: `
+                <svg viewBox="0 0 100 100" class="w-32 h-32 text-cyan-400">
+                    <!-- Brain Outline lobes -->
+                    <path d="M50,15 C65,15 78,25 78,45 C78,60 70,68 65,72 C62,74 58,74 50,75 C42,74 38,74 35,72 C30,68 22,60 22,45 C22,25 35,15 50,15 Z" fill="none" stroke="currentColor" stroke-width="2.5" class="opacity-40"/>
+                    <!-- Inner sulci lines -->
+                    <path d="M50,15 L50,75" fill="none" stroke="currentColor" stroke-width="1.5" class="opacity-30" stroke-dasharray="2 2" />
+                    <path d="M28,40 C35,42 45,35 50,45 C55,35 65,42 72,40" fill="none" stroke="currentColor" stroke-width="1.5" class="opacity-30"/>
+                    <path d="M26,52 C35,55 42,48 50,58 C58,48 65,55 74,52" fill="none" stroke="currentColor" stroke-width="1.5" class="opacity-30"/>
+                    <path d="M35,28 C42,32 45,25 50,30" fill="none" stroke="currentColor" stroke-width="1.5" class="opacity-30"/>
+                    <path d="M65,28 C58,32 55,25 50,30" fill="none" stroke="currentColor" stroke-width="1.5" class="opacity-30"/>
+                    <!-- HIGHLIGHT TARGET: BRAIN STROKE/HEMORRHAGE (Temporal Lobe Right side of image) -->
+                    <circle cx="68" cy="56" r="5" fill="#ef4444" class="pulse-target" />
+                    <text x="50" y="98" fill="#cbd5e1" font-size="8" font-weight="bold" text-anchor="middle">Estrutura Cerebral</text>
+                </svg>
+            `,
+            lungs: `
+                <svg viewBox="0 0 100 100" class="w-32 h-32 text-cyan-400">
+                    <!-- Lungs outline -->
+                    <path d="M45,20 C42,32 30,35 25,48 C20,62 18,78 35,82 C42,83 45,78 47,72 L47,20 Z" fill="none" stroke="currentColor" stroke-width="2.2" class="opacity-40"/>
+                    <path d="M55,20 C58,32 70,35 75,48 C80,62 82,78 65,82 C58,83 55,78 53,72 L53,20 Z" fill="none" stroke="currentColor" stroke-width="2.2" class="opacity-40"/>
+                    <!-- Trachea and Bronchi -->
+                    <path d="M50,15 L50,35 L40,45 M50,35 L60,45" fill="none" stroke="currentColor" stroke-width="2" class="opacity-30"/>
+                    <!-- HIGHLIGHT TARGET: PULMONARY ARTERY EMBOLISM -->
+                    <circle cx="58" cy="42" r="5" fill="#ef4444" class="pulse-target" />
+                    <text x="50" y="98" fill="#cbd5e1" font-size="8" font-weight="bold" text-anchor="middle">Árvore Pulmonar (Tórax)</text>
+                </svg>
+            `,
+            appendix: `
+                <svg viewBox="0 0 100 100" class="w-32 h-32 text-cyan-400">
+                    <!-- Abdominal / Intestinal Colon frame -->
+                    <path d="M30,25 L70,25 L72,65 C72,75 65,78 50,78 C35,78 28,75 28,65 Z" fill="none" stroke="currentColor" stroke-width="2" class="opacity-20"/>
+                    <!-- Colon Outline (Large Intestine) -->
+                    <path d="M28,65 L28,32 C28,28 32,28 36,28 L64,28 C68,28 72,28 72,32 L72,65 C72,70 68,70 64,65 L36,65 C32,70 28,70 28,65 Z" fill="none" stroke="currentColor" stroke-width="2.5" class="opacity-40" stroke-linejoin="round"/>
+                    <!-- Small Intestinal center loops -->
+                    <path d="M42,42 C48,40 46,48 50,45 C54,48 56,42 58,45 C54,50 44,48 42,42 Z" fill="none" stroke="currentColor" stroke-width="1.5" class="opacity-30"/>
+                    <!-- HIGHLIGHT TARGET: LOWER RIGHT APPENIDIX -->
+                    <circle cx="32" cy="62" r="5" fill="#ef4444" class="pulse-target" />
+                    <line x1="32" y1="62" x2="26" y2="70" stroke="#ef4444" stroke-width="1.5"/>
+                    <text x="50" y="98" fill="#cbd5e1" font-size="8" font-weight="bold" text-anchor="middle">Cavidade Abdominal</text>
+                </svg>
+            `
+        };
+
+        // 3. BASE DE CASOS CLÍNICOS E PERGUNTAS (CONCISOS E VISUAIS)
+        const levels = [
+            {
+                id: 1,
+                name: "Lucas - Trauma Craniano",
+                avatar: "💀",
+                anatomyKey: "skull",
+                patient: {
+                    name: "Lucas Valente",
+                    ageGender: "Masc, 29 anos • Acidente Mota",
+                    history: "Assimetria facial à palpação profunda na região temporal-parietal esquerda pós queda de mota."
+                },
+                protocol: {
+                    options: [
+                        { text: "TC de Crânio • Janela Óssea (Filtro Duro)", correct: true, explanation: "Excelente! Para visualizar fraturas ósseas faciais e corticais, o algoritmo de reconstrução óssea (filtro duro) ressalta fissuras e desvios de forma perfeita." },
+                        { text: "TC de Crânio • Janela de Partes Moles", correct: false, explanation: "Não. Filtros de partes moles atenuam descontinuidades ósseas finas, o que esconde microfraturas cranianas." },
+                        { text: "Ressonância Magnética Direta sem contraste", correct: false, explanation: "Não recomendado. A TC é infinitamente mais veloz na urgência de traumas ósseos graves." }
+                    ]
+                },
+                trivia: {
+                    question: "Na escala Hounsfield, como os ossos densos e as fraturas aparecem na tela?",
+                    options: [
+                        { text: "Altamente brancos (Hiperdensos) > 400 HU", correct: true, explanation: "Perfeito! Estruturas de alto teor de cálcio absorvem mais fótons de radiação, aparecendo brancas (hiperdensas) com altos valores de atenuação (> 400 HU)." },
+                        { text: "Escuros (Hipodensos) < 0 HU", correct: false },
+                        { text: "Cinzento escuro idêntico à água", correct: false }
+                    ]
+                },
+                scan: {
+                    draw: function(ctx) {
+                        ctx.fillStyle = "#000000"; ctx.fillRect(0, 0, 256, 256);
+                        ctx.fillStyle = "#1e293b"; ctx.beginPath(); ctx.arc(128, 128, 92, 0, 2 * Math.PI); ctx.fill(); // Brain tissue
+                        
+                        // Cortical do crânio branca
+                        ctx.strokeStyle = "#FFFFFF"; ctx.lineWidth = 10;
+                        ctx.beginPath(); ctx.arc(128, 128, 97, Math.PI * 0.5, Math.PI * 1.5); ctx.stroke(); // Right
+                        ctx.beginPath(); ctx.arc(128, 128, 97, Math.PI * 1.5, Math.PI * 1.8); ctx.stroke(); // Left top
+                        ctx.beginPath(); ctx.arc(128, 128, 97, Math.PI * 0.18, Math.PI * 0.5); ctx.stroke(); // Left bottom
+
+                        // FRATURA (Ponto de quebra e desalinhamento)
+                        const px = 198; const py = 78;
+                        ctx.beginPath(); ctx.moveTo(192, 58); ctx.lineTo(180, 74); ctx.lineWidth = 9; ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(195, 90); ctx.lineTo(210, 108); ctx.stroke();
+
+                        // Marcador de fratura vermelho transparente
+                        ctx.strokeStyle = "rgba(239, 68, 68, 0.4)"; ctx.lineWidth = 1.5;
+                        ctx.beginPath(); ctx.arc(px, py, 20, 0, 2 * Math.PI); ctx.stroke();
+
+                        return { x: px, y: py, r: 25 };
+                    },
+                    explanation: "Diagnóstico confirmado! Você identificou a fratura com desvio da tábua óssea parietal. O neurocirurgião foi notificado imediatamente."
+                }
+            },
+            {
+                id: 2,
+                name: "Roberto - Suspeita AVC",
+                avatar: "🧠",
+                anatomyKey: "brain",
+                patient: {
+                    name: "Roberto S. Almeida",
+                    ageGender: "Masc, 58 anos • Hemiparesia",
+                    history: "Súbito défice motor à direita há 1h30. Precisa de afastar hemorragia antes de trombólise."
+                },
+                protocol: {
+                    options: [
+                        { text: "TC de Crânio • Simples SEM Contraste", correct: true, explanation: "Excelente! A TC simples sem contraste é prioritária no AVC agudo para descartar rapidamente hemorragias (sangue agudo aparece naturalmente branco) sem ruído vascular." },
+                        { text: "TC de Crânio • Com Contraste de Fase Tardia", correct: false, explanation: "Não. O contraste iodado brilha nos vasos sanguíneos e pode mimetizar ou encobrir pequenas hemorragias agudas." },
+                        { text: "Angio-TC Urgente direta de pescoço", correct: false, explanation: "Incorreto. A imagem simples inicial é prioritária para confirmar ou afastar o sangramento parenquimatoso." }
+                    ]
+                },
+                trivia: {
+                    question: "Qual o valor médio em Unidades Hounsfield do sangue fresco coagulado?",
+                    options: [
+                        { text: "+60 a +80 HU (Hiperdenso / Branco brilhante)", correct: true, explanation: "Perfeito! Devido ao aglomerado de hemoglobina, o sangue agudo absorve mais raios X e destaca-se em branco entre +60 e +80 HU." },
+                        { text: "0 HU (Igual a líquido cefalorraquidiano)", correct: false },
+                        { text: "-1000 HU (Densidade de ar livre)", correct: false }
+                    ]
+                },
+                scan: {
+                    draw: function(ctx) {
+                        ctx.fillStyle = "#000000"; ctx.fillRect(0, 0, 256, 256);
+                        ctx.strokeStyle = "#FFFFFF"; ctx.lineWidth = 12; // Skull
+                        ctx.beginPath(); ctx.arc(128, 128, 98, 0, 2 * Math.PI); ctx.stroke();
+
+                        ctx.fillStyle = "#334155"; ctx.beginPath(); ctx.arc(128, 128, 92, 0, 2 * Math.PI); ctx.fill(); // Brain
+
+                        // Ventrículos
+                        ctx.fillStyle = "#020617";
+                        ctx.beginPath(); ctx.ellipse(116, 128, 13, 26, Math.PI/6, 0, 2*Math.PI); ctx.fill();
+                        ctx.beginPath(); ctx.ellipse(140, 128, 13, 26, -Math.PI/6, 0, 2*Math.PI); ctx.fill();
+
+                        // HEMORRAGIA (Mancha hiperdensa à esquerda)
+                        const px = 165; const py = 155;
+                        ctx.fillStyle = "#F8FAFC"; ctx.beginPath(); ctx.arc(px, py, 18, 0, 2*Math.PI); ctx.fill();
+                        ctx.strokeStyle = "#64748B"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(px, py, 21, 0, 2*Math.PI); ctx.stroke(); // Edema
+
+                        return { x: px, y: py, r: 24 };
+                    },
+                    explanation: "Excelente laudo! A hiperdensidade branca indica AVC Hemorrágico Agudo. A trombólise química foi cancelada, prevenindo desastre neurológico."
+                }
+            },
+            {
+                id: 3,
+                name: "Helena - TEP Pulmonar",
+                avatar: "🫁",
+                anatomyKey: "lungs",
+                patient: {
+                    name: "Helena Moreira",
+                    ageGender: "Fem, 62 anos • Dispneia Súbita",
+                    history: "Início súbito de extrema falta de ar e dor torácica no pós-operatório. Suspeita de Embolia."
+                },
+                protocol: {
+                    options: [
+                        { text: "Angio-TC de Tórax (Protocolo TEP) com Contraste", correct: true, explanation: "Perfeito! A Angio-TC de Tórax sincronizada capta o contraste na artéria pulmonar para evidenciar falhas de enchimento causadas por trombos." },
+                        { text: "TC Tórax Convencional Sem Contraste", correct: false, explanation: "Não. Sem contraste endovenoso, o sangue e os coágulos dentro das artérias têm a mesma densidade, tornando o trombo invisível." },
+                        { text: "Ecografia simples de ar do pulmão", correct: false, explanation: "Incorreto. A ecografia não penetra no ar pulmonar para examinar vasos centrais." }
+                    ]
+                },
+                trivia: {
+                    question: "Qual o nome da técnica que dispara o exame automaticamente ao detetar contraste na artéria?",
+                    options: [
+                        { text: "Rastreamento de Bolus (Bolus Tracking)", correct: true, explanation: "Exato! O sistema mede a atenuação em tempo real e inicia o varrimento quando o contraste atinge o limite programado." },
+                        { text: "Varredura Manual Estática", correct: false },
+                        { text: "Cintilografia de Esforço Físico", correct: false }
+                    ]
+                },
+                scan: {
+                    draw: function(ctx) {
+                        ctx.fillStyle = "#000000"; ctx.fillRect(0, 0, 256, 256);
+                        ctx.strokeStyle = "#475569"; ctx.lineWidth = 8; // Parede
+                        ctx.beginPath(); ctx.arc(128, 128, 102, 0, 2 * Math.PI); ctx.stroke();
+
+                        ctx.fillStyle = "#090d16"; // Pulmões pretos
+                        ctx.beginPath(); ctx.ellipse(75, 128, 40, 65, Math.PI/12, 0, 2*Math.PI); ctx.fill();
+                        ctx.beginPath(); ctx.ellipse(181, 128, 40, 65, -Math.PI/12, 0, 2*Math.PI); ctx.fill();
+
+                        ctx.fillStyle = "#1e293b"; // Mediastino
+                        ctx.beginPath(); ctx.ellipse(128, 132, 30, 52, 0, 0, 2*Math.PI); ctx.fill();
+
+                        ctx.fillStyle = "#FFFFFF"; // Vaso preenchido de contraste (branco)
+                        ctx.beginPath(); ctx.ellipse(142, 128, 12, 22, Math.PI/4, 0, 2*Math.PI); ctx.fill();
+
+                        // TROMBO (Falha de enchimento escura no interior do vaso branco)
+                        const px = 148; const py = 122;
+                        ctx.fillStyle = "#1E293B"; ctx.beginPath(); ctx.arc(px, py, 7, 0, 2*Math.PI); ctx.fill();
+
+                        return { x: px, y: py, r: 18 };
+                    },
+                    explanation: "Identificação fantástica! O ponto escuro é a falha de enchimento na artéria pulmonar, confirmando Embolia Pulmonar Aguda. Anticoagulação iniciada!"
+                }
+            },
+            {
+                id: 4,
+                name: "Guilherme - Apendicite",
+                avatar: "🥩",
+                anatomyKey: "appendix",
+                patient: {
+                    name: "Guilherme Santos",
+                    ageGender: "Masc, 27 anos • Abdómen Agudo",
+                    history: "Febre e dor intensa na fossa ilíaca direita com descompressão dolorosa positiva."
+                },
+                protocol: {
+                    options: [
+                        { text: "TC de Abdómen Total com Contraste (Fase Portal)", correct: true, explanation: "Excelente! O contraste na fase portal (70 segundos) destaca o realce da parede inflamada do apêndice e fluidos ao redor." },
+                        { text: "TC de Abdómen Simples SEM Contraste", correct: false, explanation: "Não recomendado. Sem contraste é difícil diferenciar ansas intestinais colapsadas de pequenas coleções ou apêndice inflamado." },
+                        { text: "Radiografia Simples de Perna e Crânio", correct: false, explanation: "Incorreto. Não tem qualquer utilidade clínica para avaliar patologia abdominal inflamatória." }
+                    ]
+                },
+                trivia: {
+                    question: "Que princípio obriga a usar a menor dose de radiação razoável em pacientes jovens?",
+                    options: [
+                        { text: "Princípio ALARA (Tão baixo quanto razoavelmente exequível)", correct: true, explanation: "Exato! O ALARA dita que devemos otimizar as doses de radiação para mitigar riscos de mutações e danos celulares ao longo da vida." },
+                        { text: "Regra Estocástica de Hertz", correct: false },
+                        { text: "Lei Térmica de Röntgen", correct: false }
+                    ]
+                },
+                scan: {
+                    draw: function(ctx) {
+                        ctx.fillStyle = "#000000"; ctx.fillRect(0, 0, 256, 256);
+                        ctx.strokeStyle = "#475569"; ctx.lineWidth = 8; // Abdominal wall
+                        ctx.beginPath(); ctx.ellipse(128, 128, 106, 84, 0, 0, 2 * Math.PI); ctx.stroke();
+
+                        ctx.fillStyle = "#CBD5E1"; ctx.beginPath(); ctx.rect(114, 185, 28, 20); ctx.fill(); // Vértebra
+
+                        // Intestino
+                        ctx.fillStyle = "#1E293B"; ctx.strokeStyle = "#0F172A"; ctx.lineWidth = 1.5;
+                        for (let i = 0; i < 3; i++) {
+                            ctx.beginPath(); ctx.arc(110 + (i*14), 100 + (i*4), 11, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+                        }
+
+                        // APÊNDICE INFLAMADO (Anel vermelho espesso e gordura borrada)
+                        const px = 65; const py = 172;
+                        ctx.fillStyle = "#475569"; ctx.beginPath(); ctx.arc(px, py, 22, 0, 2*Math.PI); ctx.fill(); // Borramento
+
+                        ctx.strokeStyle = "#EF4444"; ctx.lineWidth = 5; ctx.fillStyle = "#0F172A";
+                        ctx.beginPath(); ctx.arc(px, py, 10, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+
+                        return { x: px, y: py, r: 20 };
+                    },
+                    explanation: "Belo diagnóstico! Apêndice distendido, com paredes inflamadas e captação intensa de contraste em fossa ilíaca direita. Direto para cirurgia!"
+                }
+            }
+        ];
+
+        // 4. VARIÁVEIS DE RUNTIME DO JOGO
+        let currentLevelIndex = 0;
+        let currentStage = 1; // 1: Protocol, 2: Trivia, 3: Scan
+        let totalScore = 0;
+        let timeLeft = 60; // 1 minuto de tempo limite
+        let timerInterval = null;
+        let currentAnswerTarget = null;
+
+        // Elementos DOM
+        const screens = {
+            start: document.getElementById('screen-start'),
+            tutorial: document.getElementById('screen-tutorial'),
+            case: document.getElementById('screen-case'),
+            trivia: document.getElementById('screen-trivia'),
+            analysis: document.getElementById('screen-analysis'),
+            feedback: document.getElementById('feedback-overlay'),
+            report: document.getElementById('screen-report'),
+            gameOver: document.getElementById('screen-game-over'),
+            victory: document.getElementById('screen-victory'),
+            header: document.getElementById('game-header')
+        };
+
+        const elements = {
+            btnPlay: document.getElementById('btn-play'),
+            btnTutorial: document.getElementById('btn-tutorial'),
+            btnTutBack: document.getElementById('btn-tut-back'),
+            btnTutStart: document.getElementById('btn-tut-start'),
+            
+            patientAvatar: document.getElementById('patient-avatar-icon'),
+            patientName: document.getElementById('patient-display-name'),
+            patientMeta: document.getElementById('patient-display-meta'),
+            patientHistory: document.getElementById('patient-clinical-complaint'),
+            caseOptions: document.getElementById('case-options'),
+            anatomyContainer: document.getElementById('anatomy-vector-container'),
+            
+            triviaQuestion: document.getElementById('trivia-question'),
+            triviaOptions: document.getElementById('trivia-options'),
+            
+            scanCanvas: document.getElementById('scan-canvas'),
+            
+            btnFeedbackNext: document.getElementById('btn-feedback-next'),
+            feedbackIcon: document.getElementById('feedback-icon'),
+            feedbackTitle: document.getElementById('feedback-title'),
+            feedbackSubtitle: document.getElementById('feedback-subtitle'),
+            feedbackText: document.getElementById('feedback-text'),
+            feedbackScoreAdded: document.getElementById('feedback-score-added'),
+            feedbackScoreAddedContainer: document.getElementById('feedback-score-added-container'),
+            
+            headerLevel: document.getElementById('header-level'),
+            headerScore: document.getElementById('header-score'),
+            headerTimer: document.getElementById('header-timer'),
+            headerProgress: document.getElementById('header-progress'),
+            timerBox: document.getElementById('timer-box'),
+            
+            reportScore: document.getElementById('report-score'),
+            reportTime: document.getElementById('report-time'),
+            reportLearning: document.getElementById('report-learning'),
+            btnReportNext: document.getElementById('btn-report-next'),
+            
+            btnRestart: document.getElementById('btn-restart'),
+            btnRestartVictory: document.getElementById('btn-restart-victory'),
+            gameOverScore: document.getElementById('game-over-score'),
+            victoryScore: document.getElementById('victory-score')
+        };
+
+        // 5. NAVEGAÇÃO DE ECRÃS
+        function showScreen(screenKey) {
+            Object.keys(screens).forEach(key => {
+                if (key === screenKey) {
+                    screens[key].classList.remove('hidden');
+                } else {
+                    if (key !== 'feedback') {
+                        screens[key].classList.add('hidden');
+                    }
+                }
+            });
+            
+            if (['start', 'tutorial', 'gameOver', 'victory'].includes(screenKey)) {
+                screens.header.classList.add('hidden');
+            } else {
+                screens.header.classList.remove('hidden');
+            }
+        }
+
+        // 6. CONTROLOS DO TEMPORIZADOR
+        function startTimer() {
+            clearInterval(timerInterval);
+            timeLeft = 60; // 60 segundos (1 minuto) de forma estrita
+            elements.headerTimer.innerText = `${timeLeft}s`;
+            elements.timerBox.className = "bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/60 flex items-center gap-1.5";
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                elements.headerTimer.innerText = `${timeLeft}s`;
+                
+                if (timeLeft <= 15) {
+                    elements.timerBox.className = "bg-rose-950/80 border border-rose-600 px-2.5 py-1 rounded-lg flex items-center gap-1.5 animate-pulse text-rose-400";
+                }
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    triggerGameOver();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+        function triggerGameOver() {
+            playWrongSound();
+            elements.gameOverScore.innerText = totalScore;
+            showScreen('gameOver');
+        }
+
+        function updateScore(points) {
+            totalScore += points;
+            elements.headerScore.innerText = totalScore.toLocaleString();
+        }
+
+        // 7. FLUXO DO JOGO
+        function initGame() {
+            currentLevelIndex = 0;
+            totalScore = 0;
+            updateScore(0);
+            startLevel(currentLevelIndex);
+        }
+
+        function startLevel(levelIdx) {
+            currentLevelIndex = levelIdx;
+            currentStage = 1;
+            elements.headerLevel.innerText = (currentLevelIndex + 1);
+            updateProgressBar();
+            startTimer();
+            loadStageCase();
+        }
+
+        function updateProgressBar() {
+            const totalSteps = 3 * levels.length;
+            const currentStep = (currentLevelIndex * 3) + currentStage;
+            const percentage = (currentStep / totalSteps) * 100;
+            elements.headerProgress.style.width = `${percentage}%`;
+        }
+
+        // ETAPA 1: Apresentação Visual do Caso e Anatomia
+        function loadStageCase() {
+            const level = levels[currentLevelIndex];
+            elements.patientAvatar.innerText = level.avatar;
+            elements.patientName.innerText = level.patient.name;
+            elements.patientMeta.innerText = level.patient.ageGender;
+            elements.patientHistory.innerText = `"${level.patient.history}"`;
+            
+            // Injetar Vetor Anatómico correspondente
+            elements.anatomyContainer.innerHTML = anatomySVGs[level.anatomyKey];
+
+            // Opções de Protocolo
+            elements.caseOptions.innerHTML = '';
+            level.protocol.options.forEach((opt) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-3.5 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800/80 hover:border-cyan-500/50 transition-all text-xs font-semibold text-slate-200 active:scale-95 transform";
+                btn.innerText = opt.text;
+                btn.addEventListener('click', () => {
+                    playClickSound();
+                    evalCaseChoice(opt);
+                });
+                elements.caseOptions.appendChild(btn);
+            });
+            
+            showScreen('case');
+        }
+
+        function evalCaseChoice(opt) {
+            if (opt.correct) {
+                playCorrectSound();
+                showFeedback({
+                    success: true,
+                    title: "Escolha Perfeita!",
+                    subtitle: "Protocolo Selecionado",
+                    text: opt.explanation,
+                    score: 150
+                });
+            } else {
+                playWrongSound();
+                showFeedback({
+                    success: false,
+                    title: "Erro de Protocolo",
+                    subtitle: "Imagens com Ruído",
+                    text: opt.explanation,
+                    score: 0
+                });
+                timeLeft = Math.max(1, timeLeft - 10);
+            }
+        }
+
+        // ETAPA 2: Pergunta Teórica Compacta
+        function loadStageTrivia() {
+            currentStage = 2;
+            updateProgressBar();
+            const level = levels[currentLevelIndex];
+            elements.triviaQuestion.innerText = level.trivia.question;
+            
+            elements.triviaOptions.innerHTML = '';
+            level.trivia.options.forEach((opt) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-3.5 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800/80 hover:border-cyan-500/50 transition-all text-xs font-semibold text-slate-200 active:scale-95 transform";
+                btn.innerText = opt.text;
+                btn.addEventListener('click', () => {
+                    playClickSound();
+                    evalTriviaChoice(opt);
+                });
+                elements.triviaOptions.appendChild(btn);
+            });
+            
+            showScreen('trivia');
+        }
+
+        function evalTriviaChoice(opt) {
+            if (opt.correct) {
+                playCorrectSound();
+                showFeedback({
+                    success: true,
+                    title: "Excelente Domínio!",
+                    subtitle: "Conhecimento de Física",
+                    text: opt.explanation,
+                    score: 200
+                });
+            } else {
+                playWrongSound();
+                showFeedback({
+                    success: false,
+                    title: "Atenção Teórica",
+                    subtitle: "Conceito Errado",
+                    text: "Lembre-se da escala de atenuação e da necessidade extrema de otimizar dosagens em exames de tomografia para jovens.",
+                    score: 0
+                });
+                timeLeft = Math.max(1, timeLeft - 10);
+            }
+        }
+
+        // ETAPA 3: Análise Visual Interactiva
+        function loadStageScan() {
+            currentStage = 3;
+            updateProgressBar();
+            showScreen('analysis');
+            
+            const ctx = elements.scanCanvas.getContext('2d');
+            const level = levels[currentLevelIndex];
+            
+            ctx.clearRect(0, 0, 256, 256);
+            currentAnswerTarget = level.scan.draw(ctx);
+            
+            elements.scanCanvas.onclick = handleCanvasClick;
+        }
+
+        function handleCanvasClick(event) {
+            const rect = elements.scanCanvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            const scaleX = elements.scanCanvas.width / rect.width;
+            const scaleY = elements.scanCanvas.height / rect.height;
+            const clickX = x * scaleX;
+            const clickY = y * scaleY;
+            
+            const dx = clickX - currentAnswerTarget.x;
+            const dy = clickY - currentAnswerTarget.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            if (dist <= currentAnswerTarget.r) {
+                playCorrectSound();
+                showFeedback({
+                    success: true,
+                    title: "Laudo Fechado!",
+                    subtitle: "Alvo Diagnosticado",
+                    text: levels[currentLevelIndex].scan.explanation,
+                    score: 300
+                });
+                elements.scanCanvas.onclick = null;
+            } else {
+                playWrongSound();
+                
+                const ctx = elements.scanCanvas.getContext('2d');
+                ctx.strokeStyle = "#EF4444";
+                ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.arc(clickX, clickY, 6, 0, 2 * Math.PI); ctx.stroke();
+                
+                const instructionText = document.querySelector('#screen-analysis p');
+                instructionText.innerText = "❌ Área normal detectada. Toque na descontinuidade!";
+                instructionText.classList.remove('text-slate-400');
+                instructionText.classList.add('text-red-400', 'animate-pulse');
+                
+                setTimeout(() => {
+                    instructionText.innerText = "Toque diretamente no monitor do scanner onde está a anomalia diagnóstica ou fratura.";
+                    instructionText.classList.remove('text-red-400', 'animate-pulse');
+                    instructionText.classList.add('text-slate-400');
+                }, 2200);
+
+                timeLeft = Math.max(1, timeLeft - 10);
+            }
+        }
+
+        // 8. POPUP DE FEEDBACK
+        function showFeedback(data) {
+            elements.feedbackIcon.innerText = data.success ? "✅" : "⚠️";
+            elements.feedbackIcon.className = data.success ? "w-14 h-14 bg-cyan-950/80 border border-cyan-800 rounded-full flex items-center justify-center mx-auto text-3xl" : "w-14 h-14 bg-rose-950/80 border border-rose-800 rounded-full flex items-center justify-center mx-auto text-3xl";
+            elements.feedbackTitle.innerText = data.title;
+            elements.feedbackSubtitle.innerText = data.subtitle;
+            elements.feedbackSubtitle.className = data.success ? "text-[10px] text-cyan-400 font-extrabold uppercase tracking-widest block" : "text-[10px] text-rose-500 font-extrabold uppercase tracking-widest block";
+            elements.feedbackText.innerText = data.text;
+            
+            if (data.score > 0) {
+                elements.feedbackScoreAdded.innerText = data.score;
+                elements.feedbackScoreAddedContainer.classList.remove('hidden');
+                updateScore(data.score);
+            } else {
+                elements.feedbackScoreAddedContainer.classList.add('hidden');
+            }
+            
+            screens.feedback.classList.remove('hidden');
+        }
+
+        function closeFeedback() {
+            screens.feedback.classList.add('hidden');
+            
+            if (currentStage === 1) {
+                loadStageTrivia();
+            } else if (currentStage === 2) {
+                loadStageScan();
+            } else if (currentStage === 3) {
+                stopTimer();
+                playCompleteSound();
+                loadLevelReport();
+            }
+        }
+
+        // 9. RELATÓRIO DO CASO
+        function loadLevelReport() {
+            elements.reportScore.innerText = totalScore.toLocaleString();
+            elements.reportTime.innerText = `${timeLeft}s`;
+            
+            if (currentLevelIndex === 0) {
+                elements.reportLearning.innerText = "Excelente trabalho. Identificou com precisão o desalinhamento ósseo facial na reconstrução de algoritmo ósseo, impedindo compressões intracranianas graves.";
+            } else if (currentLevelIndex === 1) {
+                elements.reportLearning.innerText = "Confirmou um AVC hemorrágico através de uma mancha hiperdensa na TC simples sem contraste. A terapia de trombólise foi corretamente evitada.";
+            } else if (currentLevelIndex === 2) {
+                elements.reportLearning.innerText = "Detetou um trombo na artéria pulmonar central através da falha de enchimento do contraste, salvando o sistema cardiopulmonar da paciente.";
+            } else {
+                elements.reportLearning.innerText = "Localizou um apêndice distendido e inflamado em fossa ilíaca direita através do realce de parede portal, encaminhando o paciente para cirurgia a tempo.";
+            }
+            
+            showScreen('report');
+        }
+
+        function advanceNextLevel() {
+            if (currentLevelIndex < levels.length - 1) {
+                startLevel(currentLevelIndex + 1);
+            } else {
+                showVictory();
+            }
+        }
+
+        function showVictory() {
+            stopTimer();
+            elements.victoryScore.innerText = totalScore.toLocaleString();
+            showScreen('victory');
+        }
+
+        // 10. ASSOCIAÇÃO DE EVENTOS/CLIQUES
+        elements.btnPlay.addEventListener('click', () => { playClickSound(); initGame(); });
+        elements.btnTutorial.addEventListener('click', () => { playClickSound(); showScreen('tutorial'); });
+        elements.btnTutBack.addEventListener('click', () => { playClickSound(); showScreen('start'); });
+        elements.btnTutStart.addEventListener('click', () => { playClickSound(); initGame(); });
+        elements.btnFeedbackNext.addEventListener('click', () => { playClickSound(); closeFeedback(); });
+        elements.btnReportNext.addEventListener('click', () => { playClickSound(); advanceNextLevel(); });
+        elements.btnRestart.addEventListener('click', () => { playClickSound(); showScreen('start'); });
+        elements.btnRestartVictory.addEventListener('click', () => { playClickSound(); showScreen('start'); });
+
+    </script>
+</body>
+</html>
