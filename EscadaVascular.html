@@ -294,6 +294,10 @@ footer.foot a{color:var(--muted)}
     </div>
 
     <div class="quiz">
+      <div class="card">
+        <h3>Seu desempenho na escada</h3>
+        <div class="summary" id="summary"></div>
+      </div>
 
       <div id="quiz"></div>
 
@@ -924,9 +928,9 @@ const QUIZ = [
   { q:'O que caracteriza uma estenose em uma imagem de angiografia?',
     o:['Aumento localizado do calibre do vaso','Redução localizada do lúmen preenchido pelo contraste','Ausência total de ramos laterais','Escurecimento homogêneo de toda a artéria'], a:1,
     e:'Na angiografia vemos o contraste dentro do lúmen. A placa reduz o espaço ocupado pelo contraste, e o vaso aparece mais fino num trecho curto.' },
-  { q:'Um segmento normal mede 4,0 mm e o ponto mais estreito mede 1,2 mm. Qual é o grau de estenose em diâmetro?',
-    o:['30%','50%','70%','120%'], a:2,
-    e:'(1 − 1,2 / 4,0) × 100 = (1 − 0,30) × 100 = 70%.' },
+  { q:'Um segmento normal mede 4,0 mm e o ponto mais estreito mede 2 mm. Qual é o grau de estenose em diâmetro?',
+    o:['30%','50%','70%','120%'], a:1,
+    e:'(2 / 4) * 100 = 50%' },
   { q:'No modelo complexo (degrau 2), por que a lesão era mais difícil de ver?',
     o:['Porque o vaso não tinha contraste','Porque um ramo diagonal cruzava por cima e somava atenuação no mesmo ponto','Porque a imagem era colorida','Porque a lesão estava fora do vaso'], a:1,
     e:'A sobreposição soma a atenuação dos dois vasos. O cruzamento fica mais escuro e esconde o afinamento. Outras projeções do arco em C ajudam a separar os vasos.' },
