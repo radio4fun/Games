@@ -82,20 +82,61 @@
 
         <div class="text-center mb-15">
             <h2
-                class="text-4xl md:text-5xl font-extrabold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-emerald-400">
-                Simuladores & Jogos Educativos
+                class="text-4xl md:text-5xl 
+                font-extrabold mb-4 bg-clip-text 
+                text-transparent bg-gradient-to-r 
+                from-sky-400 to-emerald-400">
+                 Jogos & Simuladores Educativos 
             </h2>
             <br>
-            <p class="text-lg text-slate-400 max-w-2xl mx-auto">
-                Desenvolvidos pelos alunos do curso de Radiologia. Aprenda anatomia, posicionamento e radioproteção na
-                prática!
+            <p class="text-lg text-slate-500 max-w-2xl mx-auto">
+                Desenvolvidos pelos alunos do curso de Radiologia na disciplina de Física Radiológica III.
+                Aprenda conceitos de processamento de imagens médicas, fluoroscopia, tomografia, mamografia de um jeito divertido.
             </p>
         </div>
-
         <br>
-
-        <!-- GAMES GRID -->
+  <!-- GAMES GRID -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+         <!-- CARD: Escada Vascular (Juliana e Lara) -->
+            <div class="game-card bg-slate-800/80 border border-teal-500/40 rounded-2xl overflow-hidden flex flex-col relative group">
+                <div class="absolute top-4 right-4 bg-teal-500/15 text-teal-300 text-xs font-bold px-2 py-1 rounded border border-teal-500/30 z-10">
+                    Simpósio 2026
+                </div>
+
+                <div class="h-48 bg-slate-900 relative overflow-hidden border-b border-slate-700">
+                    <img src="assets/escada/angio_14-007_3_f030.jpg" alt="Quadro de angiografia coronariana"
+                        class="w-full h-full object-cover opacity-70 group-hover:scale-110 transition-transform duration-500">
+                    <!-- mini escada de 5 degraus -->
+                    <div class="absolute bottom-3 left-4 flex items-end gap-1" aria-hidden="true">
+                        <span class="w-5 h-3 rounded-sm bg-teal-300/90"></span>
+                        <span class="w-5 h-5 rounded-sm bg-teal-300/80"></span>
+                        <span class="w-5 h-7 rounded-sm bg-teal-300/70"></span>
+                        <span class="w-5 h-9 rounded-sm bg-teal-300/60"></span>
+                        <span class="w-5 h-11 rounded-sm bg-teal-300/50"></span>
+                    </div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-800 to-transparent pointer-events-none"></div>
+                </div>
+
+                <div class="p-6 flex-grow flex flex-col">
+                    <h3 class="text-xl font-bold text-white mb-1">Escada Vascular: detecção de estenose</h3>
+                    <p class="text-sm text-slate-400 mb-4 font-medium"><i class="fa-regular fa-user mr-1"></i>
+                        Alunas: Juliana Gomes da Silva e Lara Andrade dos Santos 4º semestre 2026/2</p>
+                    <p class="text-slate-300 text-sm mb-6 flex-grow">
+                        Aprenda a detectar a estenose vascular.
+                        Marque a estenose, receba feedback e compare sua percepção com a referência de IA.
+                    </p>
+                    <p class="text-xs text-slate-400 mt-3"><br>Protótipo educacional; não destinado ao diagnóstico clínico.</p>
+                    <a href="EscadaVascular.html"
+                       class="block w-full text-center bg-teal-700 hover:bg-teal-600 focus:ring-2 focus:ring-teal-300 focus:ring-offset-2 focus:ring-offset-slate-800 text-white font-bold py-3 px-4 rounded-xl transition duration-200">
+                        <i class="fa-solid fa-play mr-2" aria-hidden="true"></i> Subir a escada
+                    </a>
+                 
+                </div>
+            </div>
+
+
+
+      
             <!-- GAME CARD 2: Simulador de Imagem -->
             <div
                 class="game-card bg-slate-800/80 border border-slate-700 rounded-2xl overflow-hidden flex flex-col relative group">
@@ -110,17 +151,15 @@
                         class="fa-solid fa-display text-6xl text-sky-400 opacity-80 group-hover:scale-110 transition-transform duration-500"></i>
                     <div class="absolute inset-0 bg-gradient-to-t from-slate-800 to-transparent"></div>
                 </div>
-
                 <div class="p-6 flex-grow flex flex-col">
                     <h3 class="text-xl font-bold text-white mb-1">Processamento & Fluoroscopia</h3>
                     <p class="text-sm text-slate-400 mb-4 font-medium"><i class="fa-regular fa-user mr-1"></i> Autor:
-                        Raquel -- para se inspirar</p>
+                        Professora Raquel </p>
 
                     <p class="text-slate-300 text-sm mb-6 flex-grow">
                         Aprenda na prática os conceitos de Histograma, Brilho, Contraste e Resolução (Aula 2),
                         além de simular exames dinâmicos de Fluoroscopia e controle de Dose (Aula 3).
                     </p>
-
                     <!-- LINK PARA O JOGO -->
                     <a href="SimuladorRadiologia.html"
                         class="block w-full text-center bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 px-4 rounded-xl transition duration-200">
@@ -134,7 +173,7 @@
                 class="game-card bg-slate-800/80 border border-slate-700 rounded-2xl overflow-hidden flex flex-col relative group">
                 <div
                     class="absolute top-4 right-4 bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-1 rounded border border-emerald-500/30 z-10">
-                    Novo
+                    1º semestre de 2026
                 </div>
 
                 <!-- Thumbnail / Banner Placeholder -->
@@ -167,7 +206,7 @@
                 class="game-card bg-slate-800/80 border border-slate-700 rounded-2xl overflow-hidden flex flex-col relative group">
                 <div
                     class="absolute top-4 right-4 bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-1 rounded border border-emerald-500/30 z-10">
-                    Novo
+                    1º semestre de 2026
                 </div>
 
                 <!-- Thumbnail / Banner Placeholder -->
@@ -200,7 +239,7 @@
                 class="game-card bg-slate-800/80 border border-slate-700 rounded-2xl overflow-hidden flex flex-col relative group">
                 <div
                     class="absolute top-4 right-4 bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-1 rounded border border-emerald-500/30 z-10">
-                    Novo
+                    1º semestre de 2026
                 </div>
 
                 <!-- Thumbnail / Banner Placeholder -->
@@ -234,7 +273,7 @@
                 class="game-card bg-slate-800/80 border border-slate-700 rounded-2xl overflow-hidden flex flex-col relative group">
                 <div
                     class="absolute top-4 right-4 bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-1 rounded border border-emerald-500/30 z-10">
-                    Novo
+                    1º semestre de 2026
                 </div>
 
                 <!-- Thumbnail / Banner Placeholder -->
@@ -263,40 +302,12 @@
             </div>
 
 
-
-            <!-- GAME - Joao e Luis     -->
-            <div class="game-card bg-slate-800/80 border border-slate-700 rounded-2xl overflow-hidden flex flex-col relative group">
-                <div class="absolute top-4 right-4 bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-1 rounded border border-emerald-500/30 z-10">
-                    EM BREVE
-                </div>
-
-                <div class="h-48 bg-slate-900 relative overflow-hidden flex items-center justify-center border-b border-slate-700 group-hover:bg-slate-800 transition-colors">
-                    <i class="fa-solid fa-brain text-6xl text-yellow-500 opacity-80 group-hover:scale-110 transition-transform duration-500"></i>
-                    <div class="absolute inset-0 bg-gradient-to-t from-slate-800 to-transparent"></div>
-                </div>
-
-                <div class="p-6 flex-grow flex flex-col">
-                    <h3 class="text-xl font-bold text-white mb-1">Quiz de Imagens neurológicas</h3>
-                    <p class="text-sm text-slate-400 mb-4 font-medium"><i class="fa-regular fa-user mr-1"></i>
-                        Alunos
-                        João e Luis</p>
-
-                <p class="text-slate-300 text-sm mb-6 flex-grow">
-                    NeuroScan Quiz
-                </p>
-
-                <a href="JoaoLuis.html" class="block w-full text-center bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 px-4 rounded-xl transition duration-200">
-                    <i class="fa-solid fa-play mr-2"></i> Jogar Agora
-                </a>
-                    </div>
-            </div>
-
             <!-- GAME - Nemora e Agata -->
             <div
                 class="game-card bg-slate-800/80 border border-slate-700 rounded-2xl overflow-hidden flex flex-col relative group">
                 <div
                     class="absolute top-4 right-4 bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-1 rounded border border-emerald-500/30 z-10">
-                    Novo
+                    1º semestre de 2026
                 </div>
                 <div
                     class="h-48 bg-slate-900 relative overflow-hidden flex items-center justify-center border-b border-slate-700 group-hover:bg-slate-800 transition-colors">
@@ -325,7 +336,7 @@
                 class="game-card bg-slate-800/80 border border-slate-700 rounded-2xl overflow-hidden flex flex-col relative group">
                 <div
                     class="absolute top-4 right-4 bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-1 rounded border border-emerald-500/30 z-10">
-                    Novo
+                    1º semestre de 2026
                 </div>
                 <div
                     class="h-48 bg-slate-900 relative overflow-hidden flex items-center justify-center border-b border-slate-700 group-hover:bg-slate-800 transition-colors">
@@ -355,8 +366,10 @@
             <div
                 class="game-card bg-slate-800/80 border border-slate-700 rounded-2xl overflow-hidden flex flex-col relative group">
                 <div
-                    class="absolute top-4 right-4 bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-1 rounded border border-emerald-500/30 z-10">
-                    Novo
+                    class="absolute top-4 right-4 bg-pink-600 
+                    text-white text-xs font-bold px-2 py-1 
+                    rounded border border-emerald-500/30 z-10">
+                    1º semestre de 2026
                 </div>
                 <div
                     class="h-48 bg-slate-900 relative overflow-hidden flex items-center justify-center border-b border-slate-700 group-hover:bg-slate-800 transition-colors">
@@ -375,14 +388,16 @@
                         Simulador de mamografia
                     </p>
                     <a href="MicaelyAna.html"
-                        class="block w-full text-center bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 px-4 rounded-xl transition duration-200">
+                        class="block w-full text-center bg-pink-600 hover:bg-sky-500 
+                        text-white font-bold py-3 px-4 rounded-xl transition duration-200">
                         <i class="fa-solid fa-play mr-2"></i> Jogar Agora
                     </a>
                 </div>
             </div>
 
+             
 
-            <!-- CARD NOVO -->
+            <!-- CARD 1º semestre de 2026 -->
             <div
                 class="border-2 border-dashed border-slate-700 rounded-2xl flex flex-col items-center justify-center p-8 text-slate-500 hover:text-slate-300 hover:border-slate-500 transition cursor-default min-h-[400px]">
                 <i class="fa-solid fa-code text-5xl mb-4"></i>
