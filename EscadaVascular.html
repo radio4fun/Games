@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Escada Vascular</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: cabeçalho com a "escada" de 5 degraus -> visor quadrado (estilo monitor de hemodinâmica) + painel lateral de feedback. Tema escuro único, igual ao portal RadioFATESA. */
+:root{
+  color-scheme: dark;
+  --bg:#020617; --panel:#0f172a; --panel-2:#111c33; --line:#1e293b; --line-2:#334155;
+  --fg:#f1f5f9; --muted:#94a3b8; --dim:#64748b;
+  --accent:#2dd4bf; --accent-ink:#042f2e; --sky:#38bdf8;
+  --good:#34d399; --warn:#fbbf24; --bad:#f87171; --ref:#10b981;
+  --sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.5;
+  background-image:radial-gradient(at 50% 0%,rgba(45,212,191,.08) 0,transparent 55%);min-height:100vh}
+button,select,textarea,input{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,a:focus-visible,select:focus-visible,textarea:focus-visible,input:focus-visible,label:focus-within{outline:2px solid var(--sky);outline-offset:2px}
+[hidden]{display:none!important}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px}
+
+/* ---------- Cabeçalho ---------- */
+header.top{border-bottom:1px solid var(--line);background:rgba(15,23,42,.7);backdrop-filter:blur(8px);position:sticky;top:0;z-index:20}
+.topbar{display:flex;align-items:center;gap:14px;padding-block:12px;flex-wrap:wrap}
+.back{color:var(--muted);text-decoration:none;font-weight:600;font-size:14px;display:flex;align-items:center;gap:6px}
+.back:hover{color:var(--fg)}
+.brand{font-weight:800;font-size:18px;letter-spacing:-.01em}
+.brand span{color:var(--accent)}
+.brand small{display:block;font-weight:600;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.score{margin-left:auto;display:flex;gap:10px;font-family:var(--mono);font-size:13px}
+.chip{border:1px solid var(--line-2);background:var(--panel);padding:4px 10px;border-radius:999px;white-space:nowrap}
+.chip b{color:var(--warn)}
+
+/* A escada: 5 degraus de altura crescente */
+.stairs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;align-items:end;padding-block:4px 14px}
+.step{position:relative;border:1px solid var(--line-2);background:var(--panel);border-radius:10px 10px 4px 4px;
+  padding:8px 8px 7px;text-align:left;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;min-width:0;transition:background .2s,border-color .2s}
+.step:nth-child(1){height:52px}.step:nth-child(2){height:64px}.step:nth-child(3){height:76px}.step:nth-child(4){height:88px}.step:nth-child(5){height:100px}
+.step .n{font-family:var(--mono);font-size:11px;color:var(--dim)}
+.step .t{font-weight:700;font-size:12.5px;line-height:1.15;overflow-wrap:anywhere}
+.step .st{position:absolute;top:6px;right:8px;font-size:12px}
+.step:hover:not(:disabled){border-color:var(--accent)}
+.step.on{background:linear-gradient(180deg,rgba(45,212,191,.25),rgba(45,212,191,.08));border-color:var(--accent)}
+.step.on .n{color:var(--accent)}
+.step.done{border-color:rgba(52,211,153,.5)}
+.step:disabled{opacity:.45;cursor:not-allowed}
+@media (max-width:560px){.step .t{font-size:11px}.step{padding:6px 6px 5px}.score{margin-left:0}}
+
+/* ---------- Corpo ---------- */
+main{padding-block:22px 40px}
+.head h1{margin:0 0 4px;font-size:clamp(22px,3.2vw,28px);font-weight:800;letter-spacing:-.02em;text-wrap:balance}
+.eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.head p{margin:6px 0 0;color:var(--muted);max-width:70ch}
+.grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:22px;margin-top:18px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+
+/* Visor */
+.viewer-wrap{display:flex;flex-direction:column;gap:10px;min-width:0}
+.viewer{position:relative;width:100%;max-width:620px;aspect-ratio:1/1;background:#000;border:2px solid var(--line);border-radius:18px;overflow:hidden;cursor:crosshair;user-select:none;-webkit-user-select:none;touch-action:manipulation;margin-inline:auto}
+.viewer.drawing{cursor:cell;touch-action:none}
+.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
+.layer.media{object-fit:fill}
+svg.overlay{pointer-events:none}
+.hud{position:absolute;font-family:var(--mono);font-size:10.5px;color:#cbd5e1;background:rgba(2,6,23,.72);border:1px solid rgba(51,65,85,.8);padding:2px 7px;border-radius:5px;pointer-events:none;line-height:1.5}
+.hud.tl{top:10px;left:10px}.hud.tr{top:10px;right:10px;text-align:right}.hud.bl{bottom:10px;left:10px}.hud.br{bottom:10px;right:10px}
+.hud.prov{background:var(--warn);color:#1c1917;border-color:var(--warn);font-weight:600}
+.hud.refon{background:var(--ref);color:#022c22;border-color:var(--ref);font-weight:600}
+@keyframes pulse{0%,100%{stroke-opacity:1}50%{stroke-opacity:.35}}
+.refbox{animation:pulse 1.2s infinite}
+@keyframes ping{0%{r:10;opacity:.9}100%{r:30;opacity:0}}
+.pinring{animation:ping 1.4s infinite}
+@media (prefers-reduced-motion:reduce){.refbox,.pinring{animation:none}}
+
+/* Controles do vídeo */
+.vctl{display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:center;max-width:620px;margin-inline:auto;width:100%}
+.vctl button{background:var(--panel);border:1px solid var(--line-2);border-radius:10px;padding:7px 11px;font-size:13px;font-weight:600}
+.vctl button:hover{border-color:var(--sky)}
+.vctl .frame{font-family:var(--mono);font-size:12px;color:var(--muted);padding-inline:6px}
+.vctl input[type=range]{flex:1 1 160px;accent-color:var(--accent);min-width:120px}
+
+/* Painel lateral */
+.side{display:flex;flex-direction:column;gap:14px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
+.card h3{margin:0 0 8px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.feedback{min-height:96px}
+.feedback .title{font-weight:800;font-size:16px;margin-bottom:4px}
+.feedback .title.good{color:var(--good)}.feedback .title.bad{color:var(--warn)}.feedback .title.info{color:var(--sky)}
+.feedback p{margin:0;color:#cbd5e1;font-size:14px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border-radius:12px;padding:11px 16px;font-weight:800;font-size:13px;letter-spacing:.04em;text-transform:uppercase;border:1px solid transparent;border-bottom-width:4px;transition:transform .08s}
+.btn:active:not(:disabled){transform:translateY(2px);border-bottom-width:2px}
+.btn:disabled{background:var(--line)!important;color:var(--dim)!important;border-color:var(--line)!important;cursor:not-allowed}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:#0d9488}
+.btn.sky{background:var(--sky);color:#082f49;border-color:#0284c7}
+.btn.ghost{background:transparent;color:var(--fg);border-color:var(--line-2)}
+.btn.amber{background:var(--warn);color:#1c1917;border-color:#d97706}
+.factors{margin:0;padding-left:18px;color:#cbd5e1;font-size:14px;display:flex;flex-direction:column;gap:6px}
+.factors b{color:var(--fg)}
+.formula{font-family:var(--mono);font-size:13px;background:var(--panel-2);border:1px solid var(--line-2);border-radius:8px;padding:8px 10px;margin-top:8px;color:var(--accent);overflow-x:auto}
+.hist{list-style:none;margin:0;padding:0;font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px;max-height:160px;overflow:auto}
+.hist li{border-bottom:1px solid var(--line);padding-bottom:4px}
+.note{font-size:12px;color:var(--dim)}
+
+/* Calibração */
+.calib{border:1px dashed var(--warn);background:rgba(251,191,36,.06)}
+.calib h3{color:var(--warn)}
+.calib .row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.calib button{background:var(--panel-2);border:1px solid var(--line-2);border-radius:8px;padding:6px 10px;font-size:12.5px;font-weight:600}
+.calib button:hover{border-color:var(--warn)}
+.calib textarea{width:100%;min-height:150px;background:#020617;border:1px solid var(--line-2);border-radius:8px;font-family:var(--mono);font-size:11.5px;padding:8px;resize:vertical}
+.calib label{font-size:13px;display:flex;gap:6px;align-items:center}
+
+/* Etapa 5 */
+.quiz{display:flex;flex-direction:column;gap:16px;margin-top:18px;max-width:860px}
+.q{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
+.q .qt{font-weight:700;margin-bottom:10px}
+.q .qn{font-family:var(--mono);font-size:11.5px;color:var(--accent);letter-spacing:.1em}
+.opts{display:flex;flex-direction:column;gap:6px}
+.opt{display:flex;gap:10px;align-items:flex-start;text-align:left;background:var(--panel-2);border:1px solid var(--line-2);border-radius:10px;padding:9px 12px;font-size:14px}
+.opt:hover:not(:disabled){border-color:var(--sky)}
+.opt.right{border-color:var(--good);background:rgba(52,211,153,.12)}
+.opt.wrong{border-color:var(--bad);background:rgba(248,113,113,.12)}
+.opt:disabled{cursor:default}
+.opt .k{font-family:var(--mono);color:var(--dim)}
+.expl{margin-top:10px;font-size:13.5px;color:#cbd5e1;border-left:3px solid var(--accent);padding-left:10px}
+.likert{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 16px;align-items:center}
+.likert .scale{display:flex;gap:4px}
+.likert .scale label{display:grid;place-items:center;width:38px;height:36px;border:1px solid var(--line-2);border-radius:8px;cursor:pointer;font-family:var(--mono);font-size:13px;background:var(--panel-2)}
+.likert .scale input{position:absolute;opacity:0;pointer-events:none}
+.likert .scale label:has(input:checked){background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+@media (max-width:640px){.likert{grid-template-columns:1fr}.likert .scale label{width:44px}}
+.legend{display:flex;justify-content:space-between;font-size:11.5px;color:var(--dim);font-family:var(--mono)}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.summary div{background:var(--panel-2);border:1px solid var(--line-2);border-radius:12px;padding:10px 12px}
+.summary .v{font-family:var(--mono);font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+.summary .l{font-size:12px;color:var(--muted)}
+textarea.free,select.free{width:100%;background:var(--panel-2);border:1px solid var(--line-2);border-radius:10px;padding:10px}
+textarea.free{min-height:80px;resize:vertical}
+
+
+/* ---------- Celebração final ---------- */
+.celebrate{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:16px;background:rgba(2,6,23,.82);backdrop-filter:blur(4px)}
+.celebrate canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+.cel-card{position:relative;width:min(520px,100%);background:var(--panel);border:1px solid var(--line-2);border-radius:22px;padding:20px 20px 22px;text-align:center;box-shadow:0 30px 60px -20px rgba(0,0,0,.7);animation:pop .45s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+.cel-card svg{width:100%;height:auto;display:block}
+.cel-card h2{margin:6px 0 4px;font-size:clamp(22px,5vw,30px);font-weight:800;letter-spacing:-.02em;text-wrap:balance}
+.cel-card p{margin:0 auto;color:#cbd5e1;max-width:42ch}
+.cel-card .cel-score{font-family:var(--mono);color:var(--muted);font-size:13px;margin-top:8px}
+.cel-card .actions{justify-content:center;margin-top:16px}
+.tier-top h2{color:var(--warn)} .tier-mid h2{color:var(--accent)} .tier-low h2{color:var(--sky)}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+.eye{transform-box:fill-box;transform-origin:center;animation:blink 3.2s infinite}
+@keyframes wave{0%,100%{transform:rotate(0)}50%{transform:rotate(-28deg)}}
+.arm-wave{transform-box:fill-box;transform-origin:10% 90%;animation:wave .6s ease-in-out infinite}
+@keyframes twinkle{0%,100%{opacity:.2;transform:scale(.6)}50%{opacity:1;transform:scale(1.1)}}
+.spark{transform-box:fill-box;transform-origin:center;animation:twinkle 1.4s infinite}
+@media (prefers-reduced-motion:reduce){.cel-card,.eye,.arm-wave,.spark{animation:none}}
+
+footer.foot{border-top:1px solid var(--line);padding-block:20px;color:var(--dim);font-size:12px}
+footer.foot p{margin:4px 0;max-width:110ch}
+footer.foot a{color:var(--muted)}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="topbar">
+      <a class="back" id="back-link" href="index_mestre.html" aria-label="Voltar ao portal">← Portal</a>
+      <div class="brand">Escada <span>Vascular</span><small>Aprendizado na detecção de estenose.</small>
+      <small>Estudo piloto com finalidade exclusivamente educacional.</small></div>
+      <div class="score" aria-live="polite">
+        <span class="chip">⚡ <b id="xp">0</b> XP</span>
+        <span class="chip" id="acertos-chip">✔ 0/4</span>
+      </div>
+    </div>
+    <nav class="stairs" id="stairs" aria-label="Etapas da escada"></nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- ETAPAS 1-4: visor interativo -->
+  <section id="lab">
+    <div class="head">
+      <div class="eyebrow" id="st-eyebrow">Degrau 1 de 5</div>
+      <h1 id="st-title">Modelo simples</h1>
+      <p id="st-instr"></p>
+    </div>
+
+    <div class="grid">
+      <div class="viewer-wrap">
+        <div class="viewer" id="viewer" role="application" aria-label="Imagem para marcação da estenose. Toque no ponto suspeito.">
+          <svg class="layer" id="scene" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true"></svg>
+          <img class="layer media" id="realimg" alt="Quadro de angiografia coronariana do banco de dados público" hidden>
+          <video class="layer media" id="realvid" muted playsinline loop preload="auto" hidden></video>
+          <svg class="layer overlay" id="overlay" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
+            <g id="refg" hidden>
+              <rect id="refbox" class="refbox" rx="10" fill="rgba(16,185,129,.16)" stroke="#10b981" stroke-width="5"/>
+              <rect id="reflabelbg" rx="6" height="40" fill="#064e3b" stroke="#10b981" stroke-width="2"/>
+              <text id="reflabel" fill="#a7f3d0" font-size="24" font-family="JetBrains Mono, monospace" font-weight="600"></text>
+            </g>
+            <g id="aidets"></g>
+            <g id="pin" hidden>
+              <circle id="pinring" class="pinring" r="14" fill="none" stroke="#fbbf24" stroke-width="4"/>
+              <circle id="pinc" r="10" fill="rgba(251,191,36,.45)" stroke="#fbbf24" stroke-width="4"/>
+              <circle id="pind" r="3.5" fill="#fff"/>
+            </g>
+            <rect id="draft" fill="rgba(251,191,36,.15)" stroke="#fbbf24" stroke-width="4" stroke-dasharray="14 8" hidden/>
+          </svg>
+          <div class="hud tl" id="hud-tl"></div>
+          <div class="hud tr" id="hud-tr"></div>
+          <div class="hud bl" id="hud-bl"></div>
+          <div class="hud br" id="hud-br" hidden></div>
+        </div>
+
+        <div class="vctl" id="vctl" hidden>
+          <button id="v-play" type="button">⏸ Pausar</button>
+          <button id="v-prev" type="button" aria-label="Quadro anterior">◀︎ 1</button>
+          <button id="v-next" type="button" aria-label="Próximo quadro">1 ▶︎</button>
+          <button id="v-speed" type="button">Velocidade 1×</button>
+          <input type="range" id="v-seek" min="0" max="178" value="0" aria-label="Posição no vídeo">
+          <span class="frame" id="v-frame">Quadro 1/179</span>
+        </div>
+      </div>
+
+      <aside class="side">
+        <div class="card feedback" aria-live="polite">
+          <div class="title info" id="fb-title">Marque a região suspeita</div>
+          <p id="fb-body">Toque na imagem onde você acha que o vaso está estreitado.</p>
+        </div>
+
+        <div class="actions">
+          <button class="btn ghost" id="btn-hint" type="button">💡 Dica</button>
+          <button class="btn primary" id="btn-confirm" type="button" disabled>Confirmar</button>
+          <button class="btn sky" id="btn-ref" type="button" disabled>🤖 Ver referência</button>
+          <button class="btn amber" id="btn-next" type="button" hidden>Próximo degrau →</button>
+        </div>
+
+        <div class="card" id="factors-card" hidden>
+          <h3>O que observar neste caso</h3>
+          <ul class="factors" id="factors"></ul>
+          <div class="formula" id="formula" hidden></div>
+        </div>
+
+        <div class="card">
+          <h3>Suas tentativas</h3>
+          <ul class="hist" id="hist"><li>Nenhuma tentativa ainda.</li></ul>
+          <p class="note" style="margin:8px 0 0">As respostas ficam só neste navegador e somem ao fechar a página.</p>
+        </div>
+
+        <!-- Painel da professora: abre com ?calibrar=1 ou #calibrar -->
+        <div class="card calib" id="calib" hidden>
+          <h3>Modo calibração (professora)</h3>
+          <p class="note" style="margin-top:0">Desenhe a caixa sobre a lesão marcada no artigo. No vídeo, pause no quadro, desenhe e adicione um quadro‑chave; repita em 3 a 6 quadros ao longo do ciclo. Depois copie o JSON e cole no <code>CONFIG</code> do arquivo.</p>
+          <div class="row"><label><input type="checkbox" id="cal-draw"> Desenhar caixa (arraste sobre a imagem)</label></div>
+          <div class="row" id="cal-img-row">
+            <button type="button" id="cal-save-img">Salvar caixa da imagem</button>
+          </div>
+          <div class="row" id="cal-vid-row">
+            <button type="button" id="cal-add-kf">+ Quadro‑chave neste quadro</button>
+            <button type="button" id="cal-win-start">Início da janela</button>
+            <button type="button" id="cal-win-end">Fim da janela</button>
+            <button type="button" id="cal-clear-kf">Apagar quadros‑chave</button>
+          </div>
+          <div class="row">
+            <label><input type="checkbox" id="cal-confirmed"> Referência conferida com o artigo</label>
+          </div>
+          <div class="row">
+            <button type="button" id="cal-copy">Copiar JSON</button>
+            <button type="button" id="cal-reset">Restaurar padrão do arquivo</button>
+          </div>
+          <textarea id="cal-json" readonly aria-label="Configuração gerada"></textarea>
+          <p class="note" id="cal-status" style="margin-bottom:0"></p>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ETAPA 5: questões de feedback -->
+  <section id="final" hidden>
+    <div class="head">
+      <div class="eyebrow">Degrau 5 de 5</div>
+      <h1>Questões de feedback</h1>
+      <p>Responda às questões para revisar os conceitos. Depois, conte como foi a experiência. As respostas de percepção são anônimas e ajudam a avaliar este estudo piloto.</p>
+    </div>
+
+    <div class="quiz">
+      <div class="card">
+        <h3>Seu desempenho na escada</h3>
+        <div class="summary" id="summary"></div>
+      </div>
+
+      <div id="quiz"></div>
+
+      <div class="q" id="survey">
+        <div class="qn">PERCEPÇÃO DO ESTUDANTE</div>
+        <div class="qt" style="margin-top:4px">Marque de 1 (discordo totalmente) a 5 (concordo totalmente)</div>
+        <div class="likert" id="likert"></div>
+        <div style="margin-top:14px;display:grid;gap:10px">
+          <label for="perfil" style="font-weight:600;font-size:14px">Você é</label>
+          <select class="free" id="perfil">
+            <option value="">Selecione…</option>
+            <option>Estudante de Radiologia</option>
+            <option>Estudante de outro curso da saúde</option>
+            <option>Docente</option>
+            <option>Outro</option>
+          </select>
+          <label for="comentario" style="font-weight:600;font-size:14px">Comentários ou sugestões (opcional)</label>
+          <textarea class="free" id="comentario" placeholder="O que mais ajudou? O que poderia melhorar?"></textarea>
+        </div>
+        <div class="actions" style="margin-top:14px">
+          <button class="btn primary" id="btn-send" type="button">Finalizar</button>
+          <button class="btn amber" id="btn-restart" type="button">↺ Recomeçar a escada</button>
+        </div>
+        <p class="note" id="send-status"></p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p><b>Escada Vascular</b> · Projeto “Interface Web Interativa com Inteligência Artificial para detecção de estenose vascular” · Juliana Gomes da Silva e Lara Andrade dos Santos · Orientação: Profa. Raquel Pantojo de Souza Bachour · FATESA, Ribeirão Preto – SP, 2026.</p>
+    <p>Imagens e vídeo reais: série 14‑007(3) do “Angiographic dataset for stenosis detection” (Danilov et al., <i>Scientific Reports</i> 11:7582, 2021; <a href="https://data.mendeley.com/datasets/ydrm75xywg" target="_blank" rel="noopener">Mendeley Data</a>). Caixas de detecção extraídas do vídeo de saída da rede Faster R-CNN NAS publicado pelos autores. Etapas 1 e 2 são modelos didáticos gerados por computador.</p>
+    <p>Estudo piloto com finalidade exclusivamente educacional. Não se destina a diagnóstico nem substitui a avaliação de profissional habilitado.</p>
+  </div>
+</footer>
+
+
+<!-- Animação de encerramento -->
+<div class="celebrate" id="celebrate" role="dialog" aria-modal="true" aria-labelledby="cel-title" hidden>
+  <canvas id="confetti"></canvas>
+  <div class="cel-card" id="cel-card">
+    <svg viewBox="0 0 400 230" aria-hidden="true">
+      <!-- escada -->
+      <g fill="#134e4a" stroke="#2dd4bf" stroke-width="2">
+        <rect x="40"  y="190" width="64" height="30" rx="4"/>
+        <rect x="104" y="160" width="64" height="60" rx="4"/>
+        <rect x="168" y="130" width="64" height="90" rx="4"/>
+        <rect x="232" y="100" width="64" height="120" rx="4"/>
+        <rect x="296" y="70"  width="64" height="150" rx="4"/>
+      </g>
+      <g font-family="JetBrains Mono, monospace" font-size="11" fill="#99f6e4" text-anchor="middle">
+        <text x="72" y="210">1</text><text x="136" y="180">2</text><text x="200" y="150">3</text><text x="264" y="120">4</text><text x="328" y="90">5</text>
+      </g>
+      <!-- bandeira no topo -->
+      <g id="cel-flag" opacity=".35">
+        <line x1="350" y1="70" x2="350" y2="22" stroke="#e2e8f0" stroke-width="3"/>
+        <path d="M350 22 L382 31 L350 40Z" fill="#fbbf24"/>
+      </g>
+      <g id="cel-sparks"></g>
+      <!-- mascote: coração com estetoscópio -->
+      <g id="hero" transform="translate(72,190)">
+        <g id="hero-body">
+          <ellipse cx="0" cy="2" rx="18" ry="4" fill="#000" opacity=".25"/>
+          <path d="M0,-6 C-26,-22 -26,-52 -10,-56 C-4,-58 0,-52 0,-48 C0,-52 4,-58 10,-56 C26,-52 26,-22 0,-6Z" fill="#f43f5e" stroke="#9f1239" stroke-width="2"/>
+          <ellipse cx="-8" cy="-44" rx="4" ry="3" fill="#fda4af" opacity=".8"/>
+          <g fill="#0f172a"><ellipse class="eye" cx="-7" cy="-34" rx="2.6" ry="3.4"/><ellipse class="eye" cx="7" cy="-34" rx="2.6" ry="3.4"/></g>
+          <path id="hero-mouth" d="M-6,-26 Q0,-20 6,-26" fill="none" stroke="#0f172a" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M-12,-14 Q0,-2 12,-14" fill="none" stroke="#38bdf8" stroke-width="2"/>
+          <circle cx="0" cy="-8" r="3" fill="#38bdf8"/>
+          <line x1="-6" y1="-6" x2="-10" y2="4" stroke="#9f1239" stroke-width="3" stroke-linecap="round"/>
+          <line x1="6" y1="-6" x2="10" y2="4" stroke="#9f1239" stroke-width="3" stroke-linecap="round"/>
+          <path id="hero-arm" d="M16,-30 L28,-42" stroke="#9f1239" stroke-width="3.5" stroke-linecap="round"/>
+        </g>
+      </g>
+    </svg>
+    <h2 id="cel-title">Parabéns!</h2>
+    <p id="cel-msg"></p>
+    <div class="cel-score" id="cel-score"></div>
+    <div class="actions">
+      <button class="btn primary" id="cel-close" type="button">Ver meu desempenho</button>
+      <button class="btn amber" id="cel-again" type="button">↺ Jogar de novo</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   CONFIGURAÇÃO — edite aqui.
+   Coordenadas das caixas são NORMALIZADAS (0 a 1) em relação ao quadro
+   do vídeo (512 x 512 px): x,y = canto superior esquerdo; w,h = largura/altura.
+   Use o modo calibração (abra a página com ?calibrar=1) para gerar estes valores.
+   ===================================================================== */
+const CONFIG = {
+  portal: 'index_mestre.html',
+  imagem: 'assets/escada/angio_14-007_3_f030.jpg',   // quadro 30 do vídeo
+  imagemQuadro: 30,
+  video: ['assets/escada/angio_14-007_3.webm', 'assets/escada/angio_14-007_3.mp4'], // WebM (leve) e MP4 (compatibilidade)
+  fps: 12.5,
+  totalQuadros: 179,
+  rotuloReferencia: 'IA: estenose',
+  modeloIA: 'Faster R-CNN NAS (Danilov et al., 2021)',
+
+  // true = caixas conferidas. As caixas abaixo foram extraídas automaticamente do vídeo de saída do
+  // artigo "14-007 (3)#faster_rcnn_nas_lowproposals_coco" (ferramentas/extrair_caixas_video.py).
+  referenciaConfirmada: true,
+
+  // Caixa da etapa 3 (quadro 30)
+  imagemCaixa: {"x": 0.523, "y": 0.24, "w": 0.045, "h": 0.051},
+
+  // Etapa 4: caixa da lesão principal em cada quadro em que a rede a detectou (usada para corrigir
+  // o clique do aluno). Quadros sem detecção dentro da janela são interpolados.
+  videoQuadrosChave: [
+    {"f":27,"x":0.547,"y":0.271,"w":0.053,"h":0.047},
+    {"f":28,"x":0.543,"y":0.268,"w":0.045,"h":0.043},
+    {"f":29,"x":0.527,"y":0.256,"w":0.053,"h":0.051},
+    {"f":30,"x":0.523,"y":0.24,"w":0.045,"h":0.051},
+    {"f":31,"x":0.523,"y":0.236,"w":0.049,"h":0.043},
+    {"f":32,"x":0.504,"y":0.221,"w":0.057,"h":0.051},
+    {"f":33,"x":0.488,"y":0.229,"w":0.076,"h":0.051},
+    {"f":34,"x":0.492,"y":0.229,"w":0.061,"h":0.051},
+    {"f":35,"x":0.488,"y":0.225,"w":0.064,"h":0.059},
+    {"f":36,"x":0.496,"y":0.225,"w":0.057,"h":0.055},
+    {"f":37,"x":0.488,"y":0.225,"w":0.064,"h":0.047},
+    {"f":38,"x":0.492,"y":0.221,"w":0.057,"h":0.047},
+    {"f":39,"x":0.488,"y":0.213,"w":0.064,"h":0.051},
+    {"f":40,"x":0.488,"y":0.213,"w":0.057,"h":0.059},
+    {"f":41,"x":0.48,"y":0.209,"w":0.057,"h":0.051},
+    {"f":42,"x":0.473,"y":0.209,"w":0.053,"h":0.043},
+    {"f":46,"x":0.496,"y":0.244,"w":0.061,"h":0.047},
+    {"f":47,"x":0.512,"y":0.248,"w":0.053,"h":0.051},
+    {"f":48,"x":0.512,"y":0.256,"w":0.061,"h":0.043},
+    {"f":49,"x":0.508,"y":0.26,"w":0.072,"h":0.047},
+    {"f":50,"x":0.531,"y":0.268,"w":0.061,"h":0.051},
+    {"f":51,"x":0.539,"y":0.271,"w":0.061,"h":0.055},
+    {"f":52,"x":0.543,"y":0.275,"w":0.061,"h":0.047},
+    {"f":53,"x":0.547,"y":0.275,"w":0.057,"h":0.047},
+    {"f":54,"x":0.555,"y":0.275,"w":0.053,"h":0.047},
+    {"f":55,"x":0.555,"y":0.275,"w":0.061,"h":0.047},
+    {"f":56,"x":0.562,"y":0.275,"w":0.057,"h":0.051},
+    {"f":57,"x":0.559,"y":0.279,"w":0.057,"h":0.043},
+    {"f":58,"x":0.555,"y":0.279,"w":0.057,"h":0.043},
+    {"f":59,"x":0.551,"y":0.275,"w":0.057,"h":0.047},
+    {"f":60,"x":0.543,"y":0.268,"w":0.057,"h":0.047},
+    {"f":61,"x":0.531,"y":0.256,"w":0.064,"h":0.039},
+    {"f":62,"x":0.535,"y":0.248,"w":0.057,"h":0.047},
+    {"f":63,"x":0.527,"y":0.248,"w":0.057,"h":0.039},
+    {"f":64,"x":0.527,"y":0.248,"w":0.053,"h":0.047},
+    {"f":65,"x":0.523,"y":0.252,"w":0.057,"h":0.047},
+    {"f":66,"x":0.523,"y":0.252,"w":0.057,"h":0.055},
+    {"f":67,"x":0.516,"y":0.248,"w":0.068,"h":0.051},
+    {"f":68,"x":0.523,"y":0.248,"w":0.057,"h":0.047},
+    {"f":69,"x":0.531,"y":0.248,"w":0.049,"h":0.047},
+    {"f":70,"x":0.523,"y":0.248,"w":0.053,"h":0.047},
+    {"f":71,"x":0.52,"y":0.244,"w":0.049,"h":0.043},
+    {"f":72,"x":0.508,"y":0.236,"w":0.057,"h":0.047},
+    {"f":73,"x":0.52,"y":0.244,"w":0.053,"h":0.051},
+    {"f":74,"x":0.512,"y":0.252,"w":0.064,"h":0.047},
+    {"f":75,"x":0.523,"y":0.264,"w":0.061,"h":0.055},
+    {"f":76,"x":0.527,"y":0.271,"w":0.061,"h":0.043},
+    {"f":77,"x":0.535,"y":0.268,"w":0.053,"h":0.047},
+    {"f":78,"x":0.543,"y":0.271,"w":0.057,"h":0.047},
+    {"f":79,"x":0.551,"y":0.279,"w":0.057,"h":0.043},
+    {"f":80,"x":0.559,"y":0.283,"w":0.057,"h":0.047},
+    {"f":81,"x":0.566,"y":0.291,"w":0.057,"h":0.043},
+    {"f":82,"x":0.57,"y":0.291,"w":0.053,"h":0.047},
+    {"f":83,"x":0.578,"y":0.295,"w":0.053,"h":0.043},
+    {"f":84,"x":0.574,"y":0.291,"w":0.057,"h":0.043},
+    {"f":85,"x":0.57,"y":0.287,"w":0.064,"h":0.047},
+    {"f":86,"x":0.582,"y":0.287,"w":0.057,"h":0.047},
+    {"f":87,"x":0.582,"y":0.291,"w":0.053,"h":0.043},
+    {"f":88,"x":0.582,"y":0.291,"w":0.053,"h":0.047},
+    {"f":89,"x":0.574,"y":0.287,"w":0.053,"h":0.043},
+    {"f":90,"x":0.559,"y":0.275,"w":0.061,"h":0.047},
+    {"f":91,"x":0.555,"y":0.271,"w":0.057,"h":0.043},
+    {"f":92,"x":0.547,"y":0.26,"w":0.064,"h":0.051},
+    {"f":93,"x":0.547,"y":0.252,"w":0.049,"h":0.055},
+    {"f":94,"x":0.539,"y":0.248,"w":0.045,"h":0.051},
+    {"f":95,"x":0.551,"y":0.252,"w":0.045,"h":0.055}
+  ],
+  videoJanela: [27, 95],
+
+  // Todas as caixas que a rede desenhou em cada quadro (inclusive falsos positivos), só para exibição.
+  deteccoesIA: {"17":[[0.73,0.088,0.107,0.09]],"27":[[0.547,0.271,0.053,0.047]],"28":[[0.543,0.268,0.045,0.043]],"29":[[0.527,0.256,0.053,0.051]],"30":[[0.523,0.24,0.045,0.051]],"31":[[0.523,0.236,0.049,0.043],[0.305,0.271,0.1,0.047]],"32":[[0.504,0.221,0.057,0.051]],"33":[[0.488,0.229,0.076,0.051]],"34":[[0.492,0.229,0.061,0.051]],"35":[[0.488,0.225,0.064,0.059]],"36":[[0.496,0.225,0.057,0.055]],"37":[[0.488,0.225,0.064,0.047]],"38":[[0.492,0.221,0.057,0.047]],"39":[[0.488,0.213,0.064,0.051]],"40":[[0.488,0.213,0.057,0.059]],"41":[[0.48,0.209,0.057,0.051]],"42":[[0.473,0.209,0.053,0.043]],"43":[[0.418,0.303,0.096,0.055]],"44":[[0.414,0.307,0.096,0.059]],"45":[[0.285,0.146,0.057,0.043],[0.348,0.256,0.068,0.051]],"46":[[0.496,0.244,0.061,0.047]],"47":[[0.512,0.248,0.053,0.051]],"48":[[0.512,0.256,0.061,0.043]],"49":[[0.508,0.26,0.072,0.047]],"50":[[0.531,0.268,0.061,0.051]],"51":[[0.539,0.271,0.061,0.055]],"52":[[0.543,0.275,0.061,0.047]],"53":[[0.547,0.275,0.057,0.047]],"54":[[0.555,0.275,0.053,0.047]],"55":[[0.555,0.275,0.061,0.047]],"56":[[0.562,0.275,0.057,0.051]],"57":[[0.559,0.279,0.057,0.043]],"58":[[0.555,0.279,0.057,0.043],[0.195,0.416,0.033,0.027]],"59":[[0.551,0.275,0.057,0.047]],"60":[[0.543,0.268,0.057,0.047]],"61":[[0.531,0.256,0.064,0.039]],"62":[[0.535,0.248,0.057,0.047]],"63":[[0.527,0.248,0.057,0.039]],"64":[[0.527,0.248,0.053,0.047]],"65":[[0.523,0.252,0.057,0.047]],"66":[[0.523,0.252,0.057,0.055]],"67":[[0.516,0.248,0.068,0.051]],"68":[[0.523,0.248,0.057,0.047]],"69":[[0.531,0.248,0.049,0.047]],"70":[[0.523,0.248,0.053,0.047]],"71":[[0.52,0.244,0.049,0.043]],"72":[[0.508,0.236,0.057,0.047]],"73":[[0.52,0.244,0.053,0.051]],"74":[[0.512,0.252,0.064,0.047]],"75":[[0.523,0.264,0.061,0.055]],"76":[[0.527,0.271,0.061,0.043]],"77":[[0.535,0.268,0.053,0.047]],"78":[[0.543,0.271,0.057,0.047],[0.699,0.381,0.072,0.055]],"79":[[0.551,0.279,0.057,0.043]],"80":[[0.559,0.283,0.057,0.047]],"81":[[0.566,0.291,0.057,0.043]],"82":[[0.57,0.291,0.053,0.047]],"83":[[0.578,0.295,0.053,0.043]],"84":[[0.574,0.291,0.057,0.043]],"85":[[0.57,0.287,0.064,0.047]],"86":[[0.324,0.229,0.053,0.043],[0.582,0.287,0.057,0.047]],"87":[[0.418,0.217,0.041,0.035],[0.582,0.291,0.053,0.043]],"88":[[0.418,0.213,0.041,0.039],[0.582,0.291,0.053,0.047]],"89":[[0.414,0.201,0.049,0.043],[0.574,0.287,0.053,0.043]],"90":[[0.559,0.275,0.061,0.047]],"91":[[0.555,0.271,0.057,0.043]],"92":[[0.547,0.26,0.064,0.051]],"93":[[0.547,0.252,0.049,0.055]],"94":[[0.539,0.248,0.045,0.051]],"95":[[0.551,0.252,0.045,0.055]],"100":[[0.383,0.025,0.076,0.055]],"102":[[0.332,0.143,0.041,0.047]],"106":[[0.254,0.197,0.033,0.07]],"107":[[0.703,0.334,0.053,0.062]],"109":[[0.746,0.1,0.096,0.07]],"110":[[0.754,0.1,0.092,0.082]],"115":[[0.422,0.213,0.041,0.051]],"116":[[0.375,0.17,0.057,0.051]],"117":[[0.543,0.291,0.072,0.051]],"119":[[0.34,0.373,0.029,0.035]],"140":[[0.668,0.029,0.096,0.078]],"141":[[0.738,0.072,0.119,0.074]],"142":[[0.684,0.033,0.076,0.07]],"164":[[0.297,0.049,0.053,0.051]]},
+
+  margem: 0.03,            // folga do acerto ao redor da caixa (3% da largura da imagem)
+  // Endereço do Google Apps Script que grava as respostas numa planilha (veja ferramentas/salvar_respostas_planilha.gs).
+  envioUrl: 'https://script.google.com/macros/s/AKfycbyNsYJVQ7ABXEI5qPQl1gLBZJPj9-d1Gn6Co1En2P6Hq3ES8BixdNUg2Br0NGAsYMjUJg/exec'
+};
+
+/* ===================== Utilidades e estado ===================== */
+const $ = id => document.getElementById(id);
+const qs = (location.search + ' ' + location.hash).toLowerCase();
+const CALIB = /calibrar/.test(qs);
+const FREE = CALIB || /livre/.test(qs);
+const LS_KEY = 'escadaVascular.calibracao';
+let cfg = JSON.parse(JSON.stringify(CONFIG));
+if (CALIB) { try { const s = localStorage.getItem(LS_KEY); if (s) Object.assign(cfg, JSON.parse(s)); } catch (e) {} }
+$('back-link').href = cfg.portal;
+
+const STAGES = [
+  { n:1, short:'Modelo simples', kind:'svg',
+    title:'Modelo Ilustrativo',
+    instr:'Siga o vaso principal do início ao fim e toque no ponto em que o calibre diminui de forma localizada.',
+    hints:[
+      'Compare a largura do vaso no começo, no meio e no fim do trajeto.',
+      'A estenose é uma redução focal: o vaso afina num trecho curto e depois volta ao calibre normal.',
+      'Olhe para o terço médio do vaso mais largo.'
+    ],
+    factors:[
+      '<b>Redução focal do lúmen:</b> o contraste ocupa menos espaço no trecho estreitado, por isso a coluna escura fica mais fina.',
+      '<b>Calibre de referência:</b> compare sempre com um segmento normal logo antes ou logo depois da lesão.',
+      '<b>Gravidade:</b> na avaliação visual, estenoses a partir de cerca de 70% do diâmetro costumam ser consideradas significativas (no tronco da coronária esquerda, a partir de 50%).'
+    ],
+    formula:'% estenose = (1 − Dmín / Dref) × 100  →  (1 − 1,4 mm / 4,6 mm) × 100 ≈ 70%'
+  },
+  { n:2, short:'Modelo complexo', kind:'svg',
+    title:'Modelo Ilustrativo complexo',
+    instr:'Agora há vários ramos, cateter, ruído quântico e sobreposição. Encontre a estenose no vaso principal (descendente anterior), mesmo onde outro ramo cruza por cima.',
+    hints:[
+      'Escolha o vaso mais calibroso que desce do tronco e siga só ele com o olhar.',
+      'Onde dois vasos se cruzam a imagem fica mais escura e pode esconder um estreitamento.',
+      'Procure no terço proximal do vaso principal, perto do cruzamento com o ramo diagonal.'
+    ],
+    factors:[
+      '<b>Sobreposição vascular:</b> o ramo diagonal cruza exatamente sobre a lesão e soma atenuação, mascarando o estreitamento.',
+      '<b>Ruído quântico:</b> com dose baixa por quadro, a granulação reduz a nitidez das bordas do vaso.',
+      '<b>Atenuação de tecidos:</b> diafragma e partes moles mudam o brilho de fundo e o contraste local.',
+      '<b>Solução na prática:</b> adquirir outras projeções (angulações do arco em C) para “abrir” o cruzamento.'
+    ],
+    formula:'Modelo: Dref ≈ 4,2 mm, Dmín ≈ 1,5 mm  →  estenose ≈ 65%'
+  },
+  { n:3, short:'Imagem real', kind:'img',
+    title:'Imagem real: imagem de fluoroscopia de angiografia coronariana',
+    instr:'Quadro real de um exame do banco de dados público. Marque onde você suspeita de estenose. Depois compare com a caixa desenhada pela rede neural do artigo.',
+    hints:[
+      'Ignore o cateter (o tubo em laço à esquerda) e os objetos metálicos; eles não são vasos.',
+      'Siga os vasos que saem da ponta do cateter e compare o calibre de cada segmento.',
+      'Concentre-se nos segmentos proximais, mais próximos da saída do contraste.'
+    ],
+    factors:[
+      '<b>Opacificação parcial:</b> neste quadro o contraste ainda está chegando; vasos mal preenchidos podem parecer estreitos sem ter lesão.',
+      '<b>Ruído e atenuação:</b> a imagem real tem granulação e variação de brilho que não existem no modelo.',
+      '<b>Sobreposição:</b> em uma única projeção, ramos se cruzam e se escondem.',
+      '<b>Papel da IA:</b> a caixa de referência deste quadro foi desenhada por uma rede neural convolucional (Faster R-CNN), treinada com milhares de quadros anotados, que aponta regiões suspeitas para o profissional revisar.'
+    ]
+  },
+  { n:4, short:'Vídeo', kind:'vid',
+    title:'Vídeo: cinecoronariografia em movimento',
+    instr:'O coração bate e o contraste entra e sai. Toque na lesão quando ela aparecer; o vídeo pausa no quadro tocado. Use os botões de quadro a quadro e a câmera lenta se quiser.',
+    hints:[
+      'Espere o contraste encher bem os vasos antes de marcar.',
+      'Use a câmera lenta ou avance quadro a quadro para “congelar” o movimento.',
+      'A lesão acompanha o movimento do vaso; procure o mesmo segmento que você analisou na imagem estática.'
+    ],
+    factors:[
+      '<b>Movimento cardíaco:</b> a lesão muda de posição a cada quadro; é preciso rastrear o segmento ao longo do ciclo.',
+      '<b>Fases do contraste:</b> chegada, preenchimento máximo e lavagem. A análise deve usar os quadros de melhor opacificação.',
+      '<b>Análise quadro a quadro:</b> sistemas de IA em tempo real processam cada quadro do vídeo e mantêm a detecção enquanto o vaso se move (Danilov et al., 2021).',
+      '<b>A IA também erra:</b> neste vídeo a rede não detecta a lesão em alguns quadros (falso negativo) e, na fase de lavagem, marca regiões sem lesão (falso positivo). Por isso a decisão final é do profissional.'
+    ]
+  },
+  { n:5, short:'Feedback', kind:'final' }
+];
+
+const state = {
+  cur: 1, xp: 0,
+  st: STAGES.slice(0,4).map(() => ({ tentativas:0, acertou:false, dicas:0, concluida:false, hist:[] })),
+  pick: null,            // {x,y} em 0..1000 e quadro (vídeo)
+  confirmed: false, refOn: false, hintIdx: 0,
+  quiz: {}, quizDone: 0
+};
+
+/* ===================== Escada (navegação) ===================== */
+function renderStairs(){
+  const nav = $('stairs'); nav.innerHTML = '';
+  STAGES.forEach((s,i) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'step';
+    const unlocked = FREE || i === 0 || state.st[i-1]?.concluida || (i === 4 && state.st[3].concluida);
+    const done = i < 4 && state.st[i].concluida;
+    if (s.n === state.cur) b.classList.add('on');
+    if (done) b.classList.add('done');
+    b.disabled = !unlocked;
+    b.innerHTML = `<span class="st">${done ? (state.st[i].acertou ? '✔' : '•') : (unlocked ? '' : '🔒')}</span><span class="n">0${s.n}</span><span class="t">${s.short}</span>`;
+    b.setAttribute('aria-label', `Etapa ${s.n}: ${s.short}${unlocked ? '' : ' (bloqueada)'}`);
+    if (s.n === state.cur) b.setAttribute('aria-current','step');
+    b.onclick = () => goStage(s.n);
+    nav.appendChild(b);
+  });
+  $('xp').textContent = state.xp;
+  $('acertos-chip').textContent = `✔ ${state.st.filter(s=>s.acertou).length}/4`;
+}
+
+function goStage(n){
+  state.cur = n; state.pick = null; state.confirmed = false; state.refOn = false; state.hintIdx = 0;
+  const vid = $('realvid'); vid.pause();
+  if (n === 5) { $('lab').hidden = true; $('final').hidden = false; renderFinal(); renderStairs(); window.scrollTo({top:0,behavior:'smooth'}); return; }
+  $('lab').hidden = false; $('final').hidden = true;
+  const s = STAGES[n-1];
+  $('st-eyebrow').textContent = `Degrau ${n} de 5`;
+  $('st-title').textContent = s.title;
+  $('st-instr').textContent = s.instr;
+  $('scene').style.display = s.kind === 'svg' ? '' : 'none';
+  $('realimg').hidden = s.kind !== 'img';
+  vid.hidden = s.kind !== 'vid';
+  $('vctl').hidden = s.kind !== 'vid';
+  if (s.kind === 'svg') buildScene(n);
+  if (s.kind === 'img' && !$('realimg').src) $('realimg').src = cfg.imagem;
+  if (s.kind === 'vid') {
+    if (!vid.childElementCount) {
+      [].concat(cfg.video).forEach(src => { const so=document.createElement('source'); so.src=src; so.type= src.endsWith('.webm') ? 'video/webm' : 'video/mp4'; vid.appendChild(so); });
+      vid.load();
+    }
+    vid.playbackRate = 1; $('v-speed').textContent = 'Velocidade 1×';
+    vid.play().catch(()=>{});
+  }
+  // calibração só nas etapas reais
+  $('calib').hidden = !(CALIB && (s.kind === 'img' || s.kind === 'vid'));
+  $('cal-img-row').hidden = s.kind !== 'img'; $('cal-vid-row').hidden = s.kind !== 'vid';
+  $('cal-draw').checked = false; setDrawing(false);
+  resetUI();
+  renderHist(); renderStairs(); updateHud();
+}
+
+function resetUI(){
+  $('pin').setAttribute('hidden',''); $('refg').setAttribute('hidden','');
+  $('pinc').setAttribute('fill','rgba(251,191,36,.45)'); $('pinc').setAttribute('stroke','#fbbf24'); $('pinring').style.display = '';
+  $('btn-confirm').disabled = true; $('btn-confirm').textContent = 'Confirmar';
+  $('btn-ref').disabled = true; $('btn-ref').textContent = STAGES[state.cur-1].kind==='svg' ? '🎯 Ver referência' : '🤖 Ver detecção da IA';
+  $('btn-hint').disabled = false; $('btn-hint').textContent = '💡 Dica';
+  $('btn-next').hidden = true;
+  $('factors-card').hidden = true;
+  setFb('info','Marque a região suspeita', state.cur === 4
+    ? 'Toque no vídeo onde você vê o estreitamento. O vídeo pausa no quadro tocado.'
+    : 'Toque na imagem onde você acha que o vaso está estreitado.');
+}
+function setFb(tone,title,body){ const t = $('fb-title'); t.className = 'title ' + tone; t.textContent = title; $('fb-body').innerHTML = body; }
+
+/* ===================== Cenas didáticas (SVG gerado) ===================== */
+const SVGNS = 'http://www.w3.org/2000/svg';
+const bz = (P,t) => { const u=1-t; return [u*u*u*P[0][0]+3*u*u*t*P[1][0]+3*u*t*t*P[2][0]+t*t*t*P[3][0], u*u*u*P[0][1]+3*u*u*t*P[1][1]+3*u*t*t*P[2][1]+t*t*t*P[3][1]]; };
+const bzd = (P,t) => { const u=1-t; return [3*u*u*(P[1][0]-P[0][0])+6*u*t*(P[2][0]-P[1][0])+3*t*t*(P[3][0]-P[2][0]), 3*u*u*(P[1][1]-P[0][1])+6*u*t*(P[2][1]-P[1][1])+3*t*t*(P[3][1]-P[2][1])]; };
+// Tubo de largura variável ao longo de uma Bézier cúbica
+function tube(P, wFn, N=140){
+  const L=[],R=[];
+  for(let i=0;i<=N;i++){ const t=i/N, p=bz(P,t), d=bzd(P,t), m=Math.hypot(d[0],d[1])||1, nx=-d[1]/m, ny=d[0]/m, w=wFn(t)/2;
+    L.push([p[0]+nx*w,p[1]+ny*w]); R.push([p[0]-nx*w,p[1]-ny*w]); }
+  const pts=L.concat(R.reverse()); return 'M'+pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join('L')+'Z';
+}
+const taper = (w0,w1) => t => w0+(w1-w0)*t;
+const sten = (base, t0, depth, sig) => t => base(t)*(1-depth*Math.exp(-(((t-t0)/sig)**2)));
+function el(tag, attrs, parent){ const e=document.createElementNS(SVGNS,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); parent&&parent.appendChild(e); return e; }
+
+const SCENE = {}; // alvo e caixa de cada modelo
+function buildScene(n){
+  const svg=$('scene'); svg.innerHTML='';
+  const defs=el('defs',{},svg);
+  const rg=el('radialGradient',{id:'bg'+n,cx:'45%',cy:'40%',r:'75%'},defs);
+  el('stop',{offset:'0%','stop-color':n===1?'#d4d8de':'#c3c7cc'},rg); el('stop',{offset:'100%','stop-color':n===1?'#9aa1ab':'#6f7680'},rg);
+  el('rect',{width:1000,height:1000,fill:`url(#bg${n})`},svg);
+  const ink = '#1b2029';
+  if(n===1){
+    const A=[[110,170],[420,230],[520,560],[860,880]];
+    const g=el('g',{fill:ink,'fill-opacity':.88},svg);
+    const o1=bz(A,.16), o2=bz(A,.80);  // ramos saem do vaso principal
+    el('path',{d:tube([o1,[o1[0]+30,o1[1]+150],[o1[0]-90,o1[1]+360],[o1[0]-170,o1[1]+600]],taper(30,14))},g);
+    el('path',{d:tube([o2,[o2[0]+120,o2[1]+20],[o2[0]+240,o2[1]-40],[o2[0]+360,o2[1]-110]],taper(26,12))},g);
+    const t0=.56; el('path',{d:tube(A,sten(taper(50,30),t0,.70,.04))},g);
+    const p=bz(A,t0);
+    SCENE[1]={x:p[0],y:p[1],tol:75,box:{x:p[0]-75,y:p[1]-75,w:150,h:150},label:'ESTENOSE(Ilustrativa) ≈100% '};
+  } else {
+    // ruído quântico + leve desfoque
+    const f=el('filter',{id:'noise2',x:0,y:0,width:'100%',height:'100%'},defs);
+    el('feTurbulence',{type:'fractalNoise',baseFrequency:'.9',numOctaves:'2',seed:'7',result:'n'},f);
+    el('feColorMatrix',{type:'matrix',values:'0 0 0 0 .5  0 0 0 0 .5  0 0 0 0 .5  .9 .9 .9 0 -1.05'},f);
+    const bl=el('filter',{id:'soft'},defs); el('feGaussianBlur',{stdDeviation:'1.6'},bl);
+    // diafragma / coração (atenuação)
+    el('path',{d:'M0,1000 L0,720 C220,640 520,600 1000,690 L1000,1000Z',fill:'#3d434c','fill-opacity':.55},svg);
+    el('ellipse',{cx:560,cy:640,rx:430,ry:360,fill:'#4a5059','fill-opacity':.35},svg);
+    el('rect',{x:30,y:0,width:70,height:1000,fill:'#e7eaee','fill-opacity':.18},svg);
+    const g=el('g',{fill:ink,'fill-opacity':.72,filter:'url(#soft)'},svg);
+    // cateter
+    el('path',{d:tube([[40,0],[150,60],[230,120],[270,180]],()=>18)},g);
+    el('path',{d:tube([[40,0],[150,60],[230,120],[270,180]],()=>7)},el('g',{fill:'#c9ced6','fill-opacity':.5},svg));
+    // tronco
+    const TCE=[[268,182],[290,198],[310,212],[330,228]];
+    el('path',{d:tube(TCE,()=>46)},g);
+    // circunflexa e marginais
+    const CX=[[330,228],[250,300],[170,420],[130,640]];
+    el('path',{d:tube(CX,taper(36,14))},g);
+    el('path',{d:tube([[240,310],[170,380],[110,500],[70,700]],taper(20,8))},g);
+    el('path',{d:tube([[175,410],[230,520],[220,640],[260,780]],taper(18,7))},g);
+    el('path',{d:tube([[150,520],[90,600],[70,700],[40,820]],taper(14,6))},g);
+    // descendente anterior com estenose
+    const LAD=[[330,228],[470,300],[560,520],[640,960]];
+    const t0=.30; const pT=bz(LAD,t0);
+    el('path',{d:tube(LAD,sten(taper(42,18),t0,.65,.035))},g);
+    // diagonal que cruza a lesão (sobreposição)
+    el('path',{d:tube([[pT[0]-170,pT[1]-110],[pT[0]-40,pT[1]-20],[pT[0]+120,pT[1]+60],[pT[0]+330,pT[1]+250]],taper(24,10))},g);
+    // diagonais e septais
+    el('path',{d:tube([[470,300],[600,320],[740,400],[900,460]],taper(22,9))},g);
+    el('path',{d:tube([[540,450],[660,520],[760,620],[860,760]],taper(20,8))},g);
+    el('path',{d:tube([[520,420],[470,520],[430,640],[400,800]],taper(14,6))},g);
+    el('path',{d:tube([[570,600],[520,700],[500,800],[470,920]],taper(12,5))},g);
+    el('path',{d:tube([[600,760],[680,820],[740,880],[790,960]],taper(12,5))},g);
+    el('rect',{width:1000,height:1000,filter:'url(#noise2)'},svg);
+    SCENE[2]={x:pT[0],y:pT[1],tol:65,box:{x:pT[0]-70,y:pT[1]-70,w:140,h:140},label:'ESTENOSE ≈65% (modelo)'};
+  }
+}
+
+/* ===================== Referência (caixas) ===================== */
+function lerp(a,b,t){return a+(b-a)*t}
+function videoBoxAt(frame){
+  const [a,b] = cfg.videoJanela || [0, cfg.totalQuadros-1];
+  if (frame < a || frame > b) return null;
+  const k = [...(cfg.videoQuadrosChave||[])].sort((p,q)=>p.f-q.f);
+  if (!k.length) return null;
+  if (frame <= k[0].f) return k[0];
+  if (frame >= k[k.length-1].f) return k[k.length-1];
+  for (let i=0;i<k.length-1;i++) if (frame>=k[i].f && frame<=k[i+1].f){
+    const t=(frame-k[i].f)/((k[i+1].f-k[i].f)||1);
+    return {x:lerp(k[i].x,k[i+1].x,t),y:lerp(k[i].y,k[i+1].y,t),w:lerp(k[i].w,k[i+1].w,t),h:lerp(k[i].h,k[i+1].h,t)};
+  }
+  return null;
+}
+const toPx = b => b && ({x:b.x*1000,y:b.y*1000,w:b.w*1000,h:b.h*1000});
+function currentRef(frame){
+  const s=STAGES[state.cur-1];
+  if (s.kind==='svg') return { box: SCENE[s.n].box, label: SCENE[s.n].label };
+  if (s.kind==='img') return { box: toPx(cfg.imagemCaixa), label: cfg.rotuloReferencia };
+  const det = cfg.deteccoesIA && (cfg.deteccoesIA[frame]||[]).length;
+  return { box: toPx(videoBoxAt(frame)), label: det ? cfg.rotuloReferencia : 'IA: sem detecção (interpolado)' };
+}
+function drawAIDets(frame){
+  const g=$('aidets'); g.innerHTML='';
+  if(!state.refOn || STAGES[state.cur-1].kind!=='vid' || !cfg.deteccoesIA) return;
+  const main=videoBoxAt(frame);
+  (cfg.deteccoesIA[frame]||[]).forEach(b=>{
+    const isMain = main && Math.hypot((b[0]+b[2]/2)-(main.x+main.w/2),(b[1]+b[3]/2)-(main.y+main.h/2))<0.06;
+    if (isMain) return; // a lesão principal já é desenhada pela caixa de referência
+    el('rect',{x:b[0]*1000,y:b[1]*1000,width:b[2]*1000,height:b[3]*1000,rx:8,fill:'rgba(251,191,36,.12)',stroke:'#fbbf24','stroke-width':4,'stroke-dasharray':'10 6'},g);
+    const tx=Math.min(b[0]*1000, 1000-250), ty = b[1]*1000 > 40 ? b[1]*1000-10 : (b[1]+b[3])*1000+28;
+    el('text',{x:tx,y:ty,fill:'#fde68a','font-size':22,'font-family':'JetBrains Mono, monospace'},g).textContent='IA: outra detecção';
+  });
+}
+function drawRef(frame){
+  drawAIDets(frame);
+  const r=currentRef(frame), g=$('refg');
+  if(!state.refOn || !r.box){ g.setAttribute('hidden',''); return; }
+  g.removeAttribute('hidden');
+  const b=r.box; const box=$('refbox');
+  box.setAttribute('x',b.x); box.setAttribute('y',b.y); box.setAttribute('width',b.w); box.setAttribute('height',b.h);
+  const lab=$('reflabel'); lab.textContent=r.label;
+  const tw=Math.min(560, r.label.length*14.6+24);
+  let lx=Math.min(Math.max(b.x,10),1000-tw-10), ly=b.y-52; if(ly<10) ly=b.y+b.h+12;
+  const bg=$('reflabelbg'); bg.setAttribute('x',lx); bg.setAttribute('y',ly); bg.setAttribute('width',tw);
+  lab.setAttribute('x',lx+12); lab.setAttribute('y',ly+28);
+}
+
+/* ===================== Interação do aluno ===================== */
+const viewer=$('viewer');
+function evtPoint(e){ const r=viewer.getBoundingClientRect(); return { x: Math.min(1000,Math.max(0,(e.clientX-r.left)/r.width*1000)), y: Math.min(1000,Math.max(0,(e.clientY-r.top)/r.height*1000)) }; }
+function curFrame(){ const v=$('realvid'); return Math.min(cfg.totalQuadros-1, Math.max(0, Math.floor(v.currentTime*cfg.fps+1e-3))); }
+
+viewer.addEventListener('click', e => {
+  if (drawing || state.confirmed) return;
+  const s=STAGES[state.cur-1]; const p=evtPoint(e);
+  if (s.kind==='vid'){ $('realvid').pause(); p.f=curFrame(); syncPlayBtn(); }
+  state.pick=p;
+  for (const id of ['pinc','pind','pinring']){ $(id).setAttribute('cx',p.x); $(id).setAttribute('cy',p.y); }
+  $('pin').removeAttribute('hidden');
+  $('btn-confirm').disabled=false;
+  setFb('info','Ponto marcado', s.kind==='vid'
+    ? `Quadro ${p.f+1} congelado. Confirme ou toque em outro ponto para mudar a marcação.`
+    : 'Confirme sua resposta ou toque em outro ponto para mudar a marcação.');
+});
+
+function isHit(p){
+  const s=STAGES[state.cur-1];
+  if (s.kind==='svg'){ const t=SCENE[s.n]; return Math.hypot(p.x-t.x,p.y-t.y)<=t.tol; }
+  const b = s.kind==='img' ? toPx(cfg.imagemCaixa) : toPx(videoBoxAt(p.f));
+  if (!b) return null;
+  const m=(cfg.margem||0)*1000;
+  return p.x>=b.x-m && p.x<=b.x+b.w+m && p.y>=b.y-m && p.y<=b.y+b.h+m;
+}
+
+$('btn-confirm').onclick = () => {
+  if (state.confirmed) { // "Tentar novamente"
+    state.confirmed=false; state.pick=null; state.refOn=false; state.hintIdx=0;
+    resetUI(); if (STAGES[state.cur-1].kind==='vid'){ $('realvid').play().catch(()=>{}); syncPlayBtn(); }
+    return;
+  }
+  if (!state.pick) return;
+  const s=STAGES[state.cur-1], st=state.st[state.cur-1];
+  const hit=isHit(state.pick);
+  if (hit===null){
+    setFb('bad','Escolha um quadro com contraste', 'Nesse quadro o vaso ainda não está bem opacificado (ou o contraste já saiu). Avance o vídeo até os vasos ficarem escuros e marque de novo. Esta marcação não conta como tentativa.');
+    $('pin').setAttribute('hidden',''); state.pick=null; $('btn-confirm').disabled=true; return;
+  }
+  state.confirmed=true; st.tentativas++;
+  const first = st.tentativas===1;
+  if (hit && !st.acertou){ st.acertou=true; state.xp += Math.max(20, (first?100:60) - st.dicas*10); }
+  st.concluida=true;
+  st.hist.unshift(`Tentativa ${st.tentativas}: ${hit?'acertou':'fora da referência'}${s.kind==='vid'?` (quadro ${state.pick.f+1})`:''} · dicas: ${state.hintIdx}`);
+  $('pinring').style.display='none';
+  if (hit){
+    $('pinc').setAttribute('fill','rgba(52,211,153,.5)'); $('pinc').setAttribute('stroke','#34d399');
+    setFb('good','✔ Boa observação!', 'Sua marcação coincide com a região de referência. Veja abaixo os fatores deste caso e abra a referência (ou a detecção da IA) para comparar.');
+  } else {
+    $('pinc').setAttribute('fill','rgba(248,113,113,.45)'); $('pinc').setAttribute('stroke','#f87171');
+    setFb('bad','Ainda não foi desta vez', 'A marcação ficou fora da região de referência. Isso é comum: leia os fatores deste caso, abra a referência (ou a detecção da IA) e tente de novo.');
+  }
+  $('factors').innerHTML = s.factors.map(f=>`<li>${f}</li>`).join('');
+  $('formula').hidden=!s.formula; $('formula').textContent=s.formula||'';
+  $('factors-card').hidden=false;
+  $('btn-ref').disabled=false;
+  $('btn-confirm').textContent='Tentar novamente';
+  $('btn-hint').disabled=true;
+  $('btn-next').hidden=false; $('btn-next').textContent = state.cur===4 ? 'Ir para as questões →' : 'Próximo degrau →';
+  renderHist(); renderStairs();
+};
+
+$('btn-ref').onclick = () => {
+  state.refOn=!state.refOn;
+  $('btn-ref').textContent = state.refOn ? 'Ocultar' : (STAGES[state.cur-1].kind==='svg' ? '🎯 Ver referência' : '🤖 Ver detecção da IA');
+  const s=STAGES[state.cur-1];
+  drawRef(s.kind==='vid' ? (state.pick?.f ?? curFrame()) : 0);
+  updateHud();
+  if (state.refOn && s.kind==='vid') setFb('info','Detecção da IA no vídeo',`Caixas desenhadas pela rede ${cfg.modeloIA} em cada quadro. Dê play: a caixa verde acompanha a lesão enquanto o coração bate. Repare que em alguns quadros a rede não detecta nada e, na lavagem do contraste (após o quadro ~100), marca regiões erradas (caixas amarelas). A IA também erra, por isso o profissional revisa.`);
+  if (state.refOn && s.kind==='img') setFb('info','Detecção da IA neste quadro',`Caixa desenhada pela rede ${cfg.modeloIA} no quadro ${cfg.imagemQuadro}. Compare com sua marcação.`);
+};
+$('btn-next').onclick = () => goStage(state.cur+1);
+
+$('btn-hint').onclick = () => {
+  const s=STAGES[state.cur-1], st=state.st[state.cur-1];
+  if (state.hintIdx>=s.hints.length) return;
+  const msg=s.hints[state.hintIdx]; state.hintIdx++; st.dicas++;
+  setFb('info',`Dica ${state.hintIdx} de ${s.hints.length}`, msg);
+  $('btn-hint').textContent = state.hintIdx>=s.hints.length ? 'Sem mais dicas' : `💡 Dica (${state.hintIdx}/${s.hints.length})`;
+  if (state.hintIdx>=s.hints.length) $('btn-hint').disabled=true;
+};
+
+function renderHist(){
+  if (state.cur>4) return;
+  const h=state.st[state.cur-1].hist;
+  $('hist').innerHTML = h.length ? h.map(x=>`<li>${x}</li>`).join('') : '<li>Nenhuma tentativa ainda.</li>';
+}
+
+/* ===================== HUD do visor ===================== */
+function updateHud(){
+  const s=STAGES[state.cur-1]; if(!s||s.kind==='final') return;
+  const tl=$('hud-tl'), tr=$('hud-tr'), bl=$('hud-bl'), br=$('hud-br');
+  if (s.kind==='svg'){ tl.textContent='MODELO DIDÁTICO'; tr.innerHTML=s.n===1?'SEM RUÍDO':'RUÍDO + SOBREPOSIÇÃO'; bl.textContent='Degrau '+s.n; }
+  else { tl.innerHTML='DATASET 14‑007(3)'; tr.innerHTML = s.kind==='img' ? `QUADRO ${cfg.imagemQuadro}` : `${String(cfg.fps).replace('.',',')} QPS`; bl.textContent = s.kind==='img' ? 'Imagem estática' : 'Cine'; }
+  const prov = s.kind!=='svg' && !cfg.referenciaConfirmada && (state.refOn || CALIB);
+  br.hidden = !(prov || state.refOn);
+  br.className = 'hud br ' + (prov ? 'prov' : 'refon');
+  br.textContent = prov ? 'REFERÊNCIA PROVISÓRIA' : (s.kind==='svg' ? 'REFERÊNCIA DO MODELO' : 'DETECÇÃO DA IA');
+}
+
+/* ===================== Controles de vídeo ===================== */
+const vid=$('realvid');
+function syncPlayBtn(){ $('v-play').textContent = vid.paused ? '▶ Reproduzir' : '⏸ Pausar'; }
+function clearPick(){ if (state.confirmed || !state.pick) return; state.pick=null; $('pin').setAttribute('hidden',''); $('btn-confirm').disabled=true; setFb('info','Marque a região suspeita','Toque no vídeo onde você vê o estreitamento. O vídeo pausa no quadro tocado.'); }
+$('v-play').onclick = () => { if (vid.paused){ clearPick(); vid.play().catch(()=>{}); } else vid.pause(); syncPlayBtn(); };
+function stepFrame(d){ clearPick(); vid.pause(); const f=Math.min(cfg.totalQuadros-1,Math.max(0,curFrame()+d)); vid.currentTime=(f+0.5)/cfg.fps; syncPlayBtn(); }
+$('v-prev').onclick=()=>stepFrame(-1); $('v-next').onclick=()=>stepFrame(1);
+$('v-speed').onclick = () => { const r = vid.playbackRate===1 ? 0.5 : vid.playbackRate===0.5 ? 0.25 : 1; vid.playbackRate=r; $('v-speed').textContent=`Velocidade ${String(r).replace('.',',')}×`; };
+$('v-seek').max = cfg.totalQuadros-1;
+$('v-seek').oninput = e => { clearPick(); vid.pause(); vid.currentTime=(+e.target.value+0.5)/cfg.fps; syncPlayBtn(); };
+vid.addEventListener('play',syncPlayBtn); vid.addEventListener('pause',syncPlayBtn);
+(function tick(){
+  if (!vid.hidden){
+    const f=curFrame(); $('v-frame').textContent=`Quadro ${f+1}/${cfg.totalQuadros}`; $('v-seek').value=f;
+    if (state.refOn) drawRef(f);
+  }
+  requestAnimationFrame(tick);
+})();
+
+/* ===================== Modo calibração ===================== */
+let drawing=false, dragStart=null, draftBox=null;
+function setDrawing(on){ drawing=on; viewer.classList.toggle('drawing',on); if(!on){ $('draft').setAttribute('hidden',''); } }
+$('cal-draw').onchange = e => { setDrawing(e.target.checked); if (e.target.checked) vid.pause(); };
+viewer.addEventListener('pointerdown', e => { if(!drawing) return; e.preventDefault(); viewer.setPointerCapture(e.pointerId); dragStart=evtPoint(e); draftBox=null; });
+viewer.addEventListener('pointermove', e => {
+  if(!drawing||!dragStart) return; const p=evtPoint(e);
+  const b={x:Math.min(p.x,dragStart.x),y:Math.min(p.y,dragStart.y),w:Math.abs(p.x-dragStart.x),h:Math.abs(p.y-dragStart.y)};
+  const d=$('draft'); d.setAttribute('x',b.x); d.setAttribute('y',b.y); d.setAttribute('width',b.w); d.setAttribute('height',b.h); d.removeAttribute('hidden');
+  draftBox=b;
+});
+viewer.addEventListener('pointerup', () => { if(!drawing) return; dragStart=null; if(draftBox && draftBox.w>8) calStatus(`Caixa desenhada: ${fmtBox(norm(draftBox))}. Agora salve.`); });
+const r3 = v => Math.round(v*1000)/1000;
+const norm = b => ({x:r3(b.x/1000),y:r3(b.y/1000),w:r3(b.w/1000),h:r3(b.h/1000)});
+const fmtBox = b => `x=${b.x} y=${b.y} w=${b.w} h=${b.h}`;
+function calStatus(t){ $('cal-status').textContent=t; }
+function calPersist(){
+  const out={ referenciaConfirmada:cfg.referenciaConfirmada, imagemCaixa:cfg.imagemCaixa, videoQuadrosChave:[...cfg.videoQuadrosChave].sort((a,b)=>a.f-b.f), videoJanela:cfg.videoJanela };
+  $('cal-json').value = JSON.stringify(out,null,2);
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(out)); }catch(e){}
+  $('cal-confirmed').checked=!!cfg.referenciaConfirmada;
+  updateHud();
+}
+$('cal-save-img').onclick = () => { if(!draftBox) return calStatus('Desenhe a caixa primeiro.'); cfg.imagemCaixa=norm(draftBox); calPersist(); calStatus('Caixa da imagem salva.'); state.refOn=true; drawRef(0); };
+$('cal-add-kf').onclick = () => {
+  if(!draftBox) return calStatus('Desenhe a caixa primeiro.');
+  const f=curFrame(); cfg.videoQuadrosChave=(cfg.videoQuadrosChave||[]).filter(k=>k.f!==f).concat([{f,...norm(draftBox)}]);
+  const fs=cfg.videoQuadrosChave.map(k=>k.f); cfg.videoJanela=[Math.min(cfg.videoJanela[0],...fs),Math.max(cfg.videoJanela[1],...fs)];
+  calPersist(); calStatus(`Quadro‑chave ${f} salvo (${cfg.videoQuadrosChave.length} no total).`); state.refOn=true;
+};
+$('cal-win-start').onclick = () => { cfg.videoJanela=[curFrame(),cfg.videoJanela[1]]; calPersist(); calStatus(`Janela começa no quadro ${curFrame()}.`); };
+$('cal-win-end').onclick = () => { cfg.videoJanela=[cfg.videoJanela[0],curFrame()]; calPersist(); calStatus(`Janela termina no quadro ${curFrame()}.`); };
+$('cal-clear-kf').onclick = () => { cfg.videoQuadrosChave=[]; calPersist(); calStatus('Quadros‑chave apagados.'); };
+$('cal-confirmed').onchange = e => { cfg.referenciaConfirmada=e.target.checked; calPersist(); };
+$('cal-reset').onclick = () => { try{localStorage.removeItem(LS_KEY);}catch(e){} cfg=JSON.parse(JSON.stringify(CONFIG)); calPersist(); try{localStorage.removeItem(LS_KEY);}catch(e){} calStatus('Valores do arquivo restaurados.'); drawRef(curFrame()); };
+$('cal-copy').onclick = () => {
+  const ta=$('cal-json'); const t=ta.value;
+  const ok=()=>calStatus('JSON copiado. Cole no CONFIG do arquivo EscadaVascular.html.');
+  const fb=()=>{ ta.focus(); ta.select(); calStatus('Selecionei o texto: use Ctrl+C para copiar.'); };
+  if (navigator.clipboard) navigator.clipboard.writeText(t).then(ok,fb); else fb();
+};
+
+/* ===================== Etapa 5: questões ===================== */
+const QUIZ = [
+  { q:'O que caracteriza uma estenose em uma imagem de angiografia?',
+    o:['Aumento localizado do calibre do vaso','Redução localizada do lúmen preenchido pelo contraste','Ausência total de ramos laterais','Escurecimento homogêneo de toda a artéria'], a:1,
+    e:'Na angiografia vemos o contraste dentro do lúmen. A placa reduz o espaço ocupado pelo contraste, e o vaso aparece mais fino num trecho curto.' },
+  { q:'Um segmento normal mede 4,0 mm e o ponto mais estreito mede 1,2 mm. Qual é o grau de estenose em diâmetro?',
+    o:['30%','50%','70%','120%'], a:2,
+    e:'(1 − 1,2 / 4,0) × 100 = (1 − 0,30) × 100 = 70%.' },
+  { q:'No modelo complexo (degrau 2), por que a lesão era mais difícil de ver?',
+    o:['Porque o vaso não tinha contraste','Porque um ramo diagonal cruzava por cima e somava atenuação no mesmo ponto','Porque a imagem era colorida','Porque a lesão estava fora do vaso'], a:1,
+    e:'A sobreposição soma a atenuação dos dois vasos. O cruzamento fica mais escuro e esconde o afinamento. Outras projeções do arco em C ajudam a separar os vasos.' },
+  { q:'Por que analisar o vídeo (cinecoronariografia) e não apenas um quadro?',
+    o:['Porque o vídeo tem menos ruído','Porque o contraste enche e esvazia e o coração se move, então a melhor visualização ocorre em quadros específicos','Porque o vídeo dispensa o uso de contraste','Porque um único quadro sempre mostra todas as lesões'], a:1,
+    e:'O preenchimento muda ao longo da injeção e o vaso se desloca a cada batimento. Avaliar a sequência permite escolher o quadro de melhor opacificação e confirmar que o estreitamento é persistente.' },
+  { q:'Qual afirmação descreve melhor o papel da inteligência artificial na detecção de estenoses?',
+    o:['Substitui o médico e emite o laudo final','Funciona como apoio à decisão, apontando regiões suspeitas para o profissional revisar','Só funciona em modelos desenhados, não em exames reais','Elimina a necessidade de contraste'], a:1,
+    e:'Redes neurais podem localizar e estimar estenoses com rapidez e reduzir a variabilidade entre observadores, mas a interpretação final é do profissional habilitado.' },
+  { q:'Qual destes fatores NÃO dificulta a identificação visual de uma estenose?',
+    o:['Ruído quântico','Sobreposição de vasos','Tortuosidade vascular','Ter um segmento normal de referência logo antes da lesão'], a:3,
+    e:'O segmento normal de referência ajuda: é com ele que comparamos o calibre para estimar o grau de estenose.' },
+  { q:'No vídeo, a rede neural deixou de marcar a lesão em alguns quadros e marcou regiões sem lesão na fase de lavagem do contraste. O que isso mostra?',
+    o:['Que a IA está sempre certa','Que a IA pode ter falsos negativos e falsos positivos, e o resultado precisa ser revisado por um profissional','Que o vídeo não tem estenose','Que a IA só funciona em imagens desenhadas'], a:1,
+    e:'Falso negativo é não detectar uma lesão que existe; falso positivo é apontar lesão onde não há. Ambos acontecem, principalmente com pouco contraste ou muito movimento. A IA é uma ferramenta de apoio.' }
+];
+const LIKERT = [
+  'A progressão em degraus (do modelo simples ao vídeo) facilitou meu aprendizado.',
+  'O feedback após cada resposta foi claro e útil.',
+  'Comparar minha marcação com a referência me ajudou a entender a lesão.',
+  'Identificar a estenose no vídeo foi mais difícil do que na imagem estática.',
+  'Eu recomendaria esta plataforma para colegas.'
+];
+
+function renderFinal(){
+  const names=['Modelo simples','Modelo complexo','Imagem real','Vídeo'];
+  $('summary').innerHTML = `<div><div class="v">${state.xp}</div><div class="l">XP acumulado</div></div>` +
+    state.st.map((s,i)=>`<div><div class="v">${s.acertou?'✔':(s.tentativas?'✖':'–')} ${s.tentativas}</div><div class="l">${names[i]} · tentativas${s.dicas?` · ${s.dicas} dica(s)`:''}</div></div>`).join('') +
+    `<div><div class="v" id="quiz-score">${quizScore()}/${QUIZ.length}</div><div class="l">Questões corretas</div></div>`;
+  if ($('quiz').childElementCount) return;
+  $('quiz').innerHTML = QUIZ.map((q,i)=>`
+    <div class="q" id="q${i}">
+      <div class="qn">QUESTÃO ${i+1} DE ${QUIZ.length}</div>
+      <div class="qt">${q.q}</div>
+      <div class="opts">${q.o.map((o,j)=>`<button class="opt" type="button" data-q="${i}" data-o="${j}"><span class="k">${'ABCD'[j]}</span><span>${o}</span></button>`).join('')}</div>
+      <div class="expl" hidden></div>
+    </div>`).join('');
+  $('quiz').querySelectorAll('.opt').forEach(b=>b.onclick=()=>answer(+b.dataset.q,+b.dataset.o));
+  $('likert').innerHTML = LIKERT.map((t,i)=>`
+    <div style="font-size:14px">${i+1}. ${t}</div>
+    <div class="scale" role="radiogroup" aria-label="${t}">${[1,2,3,4,5].map(v=>`<label><input type="radio" name="lk${i}" id="lk${i}_${v}" value="${v}">${v}</label>`).join('')}</div>`).join('') +
+    `<div class="legend" style="grid-column:1/-1"><span>1 = discordo totalmente</span><span>5 = concordo totalmente</span></div>`;
+}
+function quizScore(){ return Object.entries(state.quiz).filter(([i,v])=>QUIZ[i].a===v).length; }
+function answer(i,j){
+  if (i in state.quiz) return;
+  state.quiz[i]=j; const q=QUIZ[i], box=$('q'+i);
+  box.querySelectorAll('.opt').forEach(b=>{ const o=+b.dataset.o; b.disabled=true; if(o===q.a) b.classList.add('right'); else if(o===j) b.classList.add('wrong'); });
+  const ex=box.querySelector('.expl'); ex.hidden=false;
+  ex.innerHTML=`<b style="color:${j===q.a?'var(--good)':'var(--warn)'}">${j===q.a?'Correto.':'Resposta correta: '+'ABCD'[q.a]+'.'}</b> ${q.e}`;
+  if (j===q.a) state.xp+=15;
+  $('quiz-score').textContent=`${quizScore()}/${QUIZ.length}`; renderStairs();
+}
+
+function buildRecord(){
+  const lk=LIKERT.map((_,i)=>{ const c=document.querySelector(`input[name=lk${i}]:checked`); return c?c.value:''; });
+  const r={ data:new Date().toISOString(), perfil:$('perfil').value, xp:state.xp };
+  ['simples','complexo','imagem','video'].forEach((k,i)=>{ const s=state.st[i]; r[k+'_acertou']=s.acertou?1:0; r[k+'_tentativas']=s.tentativas; r[k+'_dicas']=s.dicas; });
+  r.quiz_acertos=quizScore(); r.quiz_respondidas=Object.keys(state.quiz).length;
+  lk.forEach((v,i)=>r['likert'+(i+1)]=v);
+  r.comentario=$('comentario').value.replace(/\s+/g,' ').trim();
+  return r;
+}
+let enviado=false;
+function enviarRespostas(r){
+  if (!cfg.envioUrl || enviado) return;
+  enviado=true;
+  // text/plain evita a verificação CORS; o Apps Script lê o JSON em e.postData.contents
+  fetch(cfg.envioUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(r)})
+    .then(()=>{ $('send-status').textContent='✔ Respostas registradas. Obrigado por participar!'; })
+    .catch(()=>{ enviado=false; $('send-status').textContent='Não foi possível enviar agora (sem internet?). Clique em Finalizar de novo.'; });
+}
+$('btn-send').onclick = () => {
+  const r=buildRecord();
+  enviarRespostas(r);
+  showCelebration();
+};
+$('btn-restart').onclick = () => {
+  state.xp=0; state.quiz={}; state.st=state.st.map(()=>({tentativas:0,acertou:false,dicas:0,concluida:false,hist:[]}));
+  $('quiz').innerHTML=''; $('likert').innerHTML=''; enviado=false; $('send-status').textContent='';
+  goStage(1);
+};
+
+
+/* ===================== Animação de encerramento ===================== */
+const STEPS=[[72,190],[136,160],[200,130],[264,100],[328,70]];
+const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+function desempenho(){
+  const les = state.st.filter(s=>s.acertou).length/4;
+  const qz = quizScore()/QUIZ.length;
+  return Math.round((les*0.5+qz*0.5)*100);
+}
+function showCelebration(){
+  const pct=desempenho();
+  const tier = pct>=75 ? 'top' : pct>=45 ? 'mid' : 'low';
+  const T = {
+    top:{t:'Parabéns! 🎉', m:'Você chegou ao topo da escada com olho clínico afiado. Reconheceu a estenose do esquema ao vídeo e entendeu como a IA ajuda (e também erra).', steps:5},
+    mid:{t:'Muito bem! 👏', m:'Você subiu boa parte da escada. Revise os degraus em que errou e as explicações das questões: falta pouco para o topo.', steps:3},
+    low:{t:'Não desista! 💪', m:'Identificar estenose é difícil até para profissionais experientes. Da próxima vez você vai conseguir: use as dicas e compare com a detecção da IA.', steps:2}
+  }[tier];
+  $('cel-card').className='cel-card tier-'+tier;
+  $('cel-title').textContent=T.t; $('cel-msg').textContent=T.m;
+  $('cel-score').textContent=`Lesões encontradas: ${state.st.filter(s=>s.acertou).length}/4 · Questões: ${quizScore()}/${QUIZ.length} · ${state.xp} XP`;
+  $('hero-mouth').setAttribute('d', tier==='low' ? 'M-6,-24 Q0,-27 6,-24' : 'M-7,-27 Q0,-18 7,-27');
+  $('hero-arm').classList.toggle('arm-wave', tier!=='low');
+  $('hero-arm').setAttribute('d', tier==='low' ? 'M16,-30 L26,-22' : 'M16,-30 L28,-42');
+  $('cel-flag').setAttribute('opacity', tier==='top' ? 1 : .35);
+  $('cel-sparks').innerHTML='';
+  $('celebrate').hidden=false; $('cel-close').focus();
+  hop(T.steps, () => {
+    if (tier==='top'){ sparkles(); confetti(); }
+    else if (tier==='mid'){ sparkles(); }
+  });
+}
+function hop(n, done){
+  const hero=$('hero'); let i=0;
+  hero.setAttribute('transform',`translate(${STEPS[0][0]},${STEPS[0][1]})`);
+  if (reduceMotion){ const p=STEPS[n-1]; hero.setAttribute('transform',`translate(${p[0]},${p[1]})`); done(); return; }
+  function next(){
+    if (i>=n-1){ done(); return; }
+    const a=STEPS[i], b=STEPS[i+1], t0=performance.now(), dur=420;
+    (function f(now){
+      const t=Math.min(1,(now-t0)/dur), x=a[0]+(b[0]-a[0])*t, y=a[1]+(b[1]-a[1])*t-Math.sin(Math.PI*t)*38;
+      const sq = t>.9 ? 1-(1-t)*3 : 1;
+      hero.setAttribute('transform',`translate(${x},${y}) scale(${1+(1-sq)*.15},${sq})`);
+      if (t<1) requestAnimationFrame(f); else { i++; setTimeout(next,90); }
+    })(t0);
+  }
+  setTimeout(next,350);
+}
+function sparkles(){
+  const g=$('cel-sparks'); const pts=[[40,40],[120,30],[200,60],[270,30],[380,110],[30,120]];
+  pts.forEach((p,i)=>el('path',{d:`M${p[0]},${p[1]-8} L${p[0]+2},${p[1]-2} L${p[0]+8},${p[1]} L${p[0]+2},${p[1]+2} L${p[0]},${p[1]+8} L${p[0]-2},${p[1]+2} L${p[0]-8},${p[1]} L${p[0]-2},${p[1]-2}Z`,fill:i%2?'#fbbf24':'#2dd4bf',class:'spark',style:`animation-delay:${i*.2}s`},g));
+}
+let confettiRun=0;
+function confetti(){
+  if (reduceMotion) return;
+  const c=$('confetti'), ctx=c.getContext('2d'), dpr=window.devicePixelRatio||1;
+  c.width=innerWidth*dpr; c.height=innerHeight*dpr; ctx.scale(dpr,dpr);
+  const cols=['#2dd4bf','#fbbf24','#38bdf8','#f43f5e','#a7f3d0','#f8fafc'];
+  const P=Array.from({length:160},()=>({x:innerWidth/2+(Math.random()-.5)*120,y:innerHeight*.35,vx:(Math.random()-.5)*12,vy:-Math.random()*13-4,r:Math.random()*6+4,c:cols[Math.random()*cols.length|0],a:Math.random()*6,va:(Math.random()-.5)*.3}));
+  const id=++confettiRun, t0=performance.now();
+  (function f(now){
+    if (id!==confettiRun) return;
+    ctx.clearRect(0,0,innerWidth,innerHeight);
+    P.forEach(p=>{ p.vy+=.28; p.vx*=.99; p.x+=p.vx; p.y+=p.vy; p.a+=p.va;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.a); ctx.fillStyle=p.c; ctx.fillRect(-p.r/2,-p.r/4,p.r,p.r/2); ctx.restore(); });
+    if (now-t0<4500) requestAnimationFrame(f); else ctx.clearRect(0,0,innerWidth,innerHeight);
+  })(t0);
+}
+function closeCelebration(){ confettiRun++; const c=$('confetti'); c.getContext('2d').clearRect(0,0,c.width,c.height); $('celebrate').hidden=true; }
+$('cel-close').onclick=()=>{ closeCelebration(); $('summary').scrollIntoView({behavior:'smooth',block:'center'}); };
+$('cel-again').onclick=()=>{ closeCelebration(); $('btn-restart').click(); };
+$('celebrate').addEventListener('click',e=>{ if(e.target.id==='celebrate') closeCelebration(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && !$('celebrate').hidden) closeCelebration(); });
+
+/* ===================== Início ===================== */
+if (CALIB) calPersist();
+const startHash = (location.hash.match(/etapa(\d)/)||[])[1];
+goStage(FREE && startHash ? Math.min(5,Math.max(1,+startHash)) : 1);
+</script>
+</body>
+</html>
