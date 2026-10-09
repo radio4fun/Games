@@ -11,12 +11,12 @@ O projeto combina conceitos acadêmicos com uma abordagem lúdica, promovendo ap
 
 Transformar conteúdos complexos da radiologia em experiências interativas, facilitando o entendimento de temas como:
 
-- ⚡ Física das radiações
-- 🖥️ Processamento de imagens
-- ☢️ Radioproteção
-- 🌀 Tomografia Computadorizada
-- 📺 Fluoroscopia
--  - <img src="https://raw.githubusercontent.com/healthicons/healthicons/main/public/icons/svg/outline/health/breast.svg" width="18"/> **Mamografia:** Espectro de raio X, compressão e qualidade de imagem. 
+- 🖥️ **Processamento de imagens**
+- 🌀 **Tomografia Computadorizada**
+- 📺 **Fluoroscopia**
+- 🎀 **Mamografia:**
+- ⚡ **Física das radiações**
+- ☢️ **Radioproteção**
 
 ---
 
