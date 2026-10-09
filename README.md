@@ -11,11 +11,12 @@ O projeto combina conceitos acadêmicos com uma abordagem lúdica, promovendo ap
 
 Transformar conteúdos complexos da radiologia em experiências interativas, facilitando o entendimento de temas como:
 
-- 🧠 Anatomia aplicada
 - ⚡ Física das radiações
 - 🖥️ Processamento de imagens
 - ☢️ Radioproteção
 - 📊 Tomografia Computadorizada
+- Fluoroscopia
+- Mamografia 
 
 ---
 
