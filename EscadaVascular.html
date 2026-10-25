@@ -95,6 +95,11 @@ svg.overlay{pointer-events:none}
 .feedback .title.good{color:var(--good)}.feedback .title.bad{color:var(--warn)}.feedback .title.info{color:var(--sky)}
 .feedback p{margin:0;color:#cbd5e1;font-size:14px}
 .actions{display:flex;gap:8px;flex-wrap:wrap}
+/* Botões do visor: próximo degrau (grande) → confirmar/tentar novamente → dica e referência */
+.actions.stack{display:flex;flex-direction:column;gap:10px}
+.actions.stack>.btn{width:100%}
+.actions.stack .pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn.big{padding:16px 18px;font-size:16px}
 .btn{border-radius:12px;padding:11px 16px;font-weight:800;font-size:13px;letter-spacing:.04em;text-transform:uppercase;border:1px solid transparent;border-bottom-width:4px;transition:transform .08s}
 .btn:active:not(:disabled){transform:translateY(2px);border-bottom-width:2px}
 .btn:disabled{background:var(--line)!important;color:var(--dim)!important;border-color:var(--line)!important;cursor:not-allowed}
@@ -120,6 +125,15 @@ svg.overlay{pointer-events:none}
 
 /* Etapa 5 */
 .quiz{display:flex;flex-direction:column;gap:16px;margin-top:18px;max-width:860px}
+.learn{background:var(--panel);border:1px dashed var(--line-2);border-radius:16px;padding:0}
+.learn>summary{list-style:none;cursor:pointer;padding:16px 18px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;border-radius:16px}
+.learn>summary::-webkit-details-marker{display:none}
+.learn>summary::after{content:'＋';margin-left:auto;font-weight:800;color:var(--accent)}
+.learn[open]>summary::after{content:'－'}
+.learn>summary:hover{background:var(--panel-2)}
+.learn .lt{font-weight:800;font-size:16px}
+.learn .ls{font-size:13px;color:var(--muted)}
+.learn #quiz{display:flex;flex-direction:column;gap:14px;padding:0 14px 14px}
 .q{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
 .q .qt{font-weight:700;margin-bottom:10px}
 .q .qn{font-family:var(--mono);font-size:11.5px;color:var(--accent);letter-spacing:.1em}
@@ -139,7 +153,7 @@ svg.overlay{pointer-events:none}
 @media (max-width:640px){.likert{grid-template-columns:1fr}.likert .scale label{width:44px}}
 .legend{display:flex;justify-content:space-between;font-size:11.5px;color:var(--dim);font-family:var(--mono)}
 .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
-.summary div{background:var(--panel-2);border:1px solid var(--line-2);border-radius:12px;padding:10px 12px}
+.summary>div{background:var(--panel-2);border:1px solid var(--line-2);border-radius:12px;padding:10px 12px}
 .summary .v{font-family:var(--mono);font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
 .summary .l{font-size:12px;color:var(--muted)}
 textarea.free,select.free{width:100%;background:var(--panel-2);border:1px solid var(--line-2);border-radius:10px;padding:10px}
@@ -165,6 +179,14 @@ textarea.free{min-height:80px;resize:vertical}
 .spark{transform-box:fill-box;transform-origin:center;animation:twinkle 1.4s infinite}
 @media (prefers-reduced-motion:reduce){.cel-card,.eye,.arm-wave,.spark{animation:none}}
 
+.cases{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.case{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line-2);border-radius:12px;padding:7px 12px;text-align:left}
+.case .cn{font-family:var(--mono);font-size:11.5px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase}
+.case .cs{font-weight:700;font-size:13.5px}
+.case .ck{font-size:12px;min-width:1em}
+.case.on{border-color:var(--accent);background:linear-gradient(180deg,rgba(45,212,191,.2),rgba(45,212,191,.06))}
+.case:hover:not(:disabled){border-color:var(--accent)}
+.case:disabled{opacity:.45;cursor:not-allowed}
 footer.foot{border-top:1px solid var(--line);padding-block:20px;color:var(--dim);font-size:12px}
 footer.foot p{margin:4px 0;max-width:110ch}
 footer.foot a{color:var(--muted)}
@@ -194,6 +216,7 @@ footer.foot a{color:var(--muted)}
       <div class="eyebrow" id="st-eyebrow">Degrau 1 de 5</div>
       <h1 id="st-title">Modelo simples</h1>
       <p id="st-instr"></p>
+      <div class="cases" id="cases" hidden></div>
     </div>
 
     <div class="grid">
@@ -238,11 +261,13 @@ footer.foot a{color:var(--muted)}
           <p id="fb-body">Toque na imagem onde você acha que o vaso está estreitado.</p>
         </div>
 
-        <div class="actions">
-          <button class="btn ghost" id="btn-hint" type="button">💡 Dica</button>
+        <div class="actions stack">
+          <button class="btn amber big" id="btn-next" type="button" hidden>Próximo degrau →</button>
           <button class="btn primary" id="btn-confirm" type="button" disabled>Confirmar</button>
-          <button class="btn sky" id="btn-ref" type="button" disabled>🤖 Ver referência</button>
-          <button class="btn amber" id="btn-next" type="button" hidden>Próximo degrau →</button>
+          <div class="pair">
+            <button class="btn ghost" id="btn-hint" type="button">💡 Dica</button>
+            <button class="btn sky" id="btn-ref" type="button" disabled>🤖 Ver referência</button>
+          </div>
         </div>
 
         <div class="card" id="factors-card" hidden>
@@ -260,7 +285,7 @@ footer.foot a{color:var(--muted)}
         <!-- Painel da professora: abre com ?calibrar=1 ou #calibrar -->
         <div class="card calib" id="calib" hidden>
           <h3>Modo calibração (professora)</h3>
-          <p class="note" style="margin-top:0">Desenhe a caixa sobre a lesão marcada no artigo. No vídeo, pause no quadro, desenhe e adicione um quadro‑chave; repita em 3 a 6 quadros ao longo do ciclo. Depois copie o JSON e cole no <code>CONFIG</code> do arquivo.</p>
+          <p class="note" style="margin-top:0">Desenhe a caixa sobre a lesão marcada no artigo. No vídeo, pause no quadro, desenhe e adicione um quadro‑chave; repita em 3 a 6 quadros ao longo do ciclo. Depois copie o JSON e cole no caso correspondente em <code>assets/escada/casos.js</code>.</p>
           <div class="row"><label><input type="checkbox" id="cal-draw"> Desenhar caixa (arraste sobre a imagem)</label></div>
           <div class="row" id="cal-img-row">
             <button type="button" id="cal-save-img">Salvar caixa da imagem</button>
@@ -285,12 +310,12 @@ footer.foot a{color:var(--muted)}
     </div>
   </section>
 
-  <!-- ETAPA 5: questões de feedback -->
+  <!-- ETAPA 5: feedback do estudante (as questões de revisão ficam numa seção opcional) -->
   <section id="final" hidden>
     <div class="head">
       <div class="eyebrow">Degrau 5 de 5</div>
-      <h1>Questões de feedback</h1>
-      <p>Responda às questões para revisar os conceitos. Depois, conte como foi a experiência. As respostas de percepção são anônimas e ajudam a avaliar este estudo piloto.</p>
+      <h1>Feedback</h1>
+      <p>Conte como foi a experiência e clique em Finalizar. As respostas são anônimas e ajudam a avaliar este estudo piloto. Se quiser aprender mais, abra as questões de revisão no fim da página.</p>
     </div>
 
     <div class="quiz">
@@ -298,8 +323,6 @@ footer.foot a{color:var(--muted)}
         <h3>Seu desempenho na escada</h3>
         <div class="summary" id="summary"></div>
       </div>
-
-      <div id="quiz"></div>
 
       <div class="q" id="survey">
         <div class="qn">PERCEPÇÃO DO ESTUDANTE</div>
@@ -323,6 +346,14 @@ footer.foot a{color:var(--muted)}
         </div>
         <p class="note" id="send-status"></p>
       </div>
+
+      <details class="learn" id="learn">
+        <summary>
+          <span class="lt">📚 Quer aprender mais?</span>
+          <span class="ls">Questões de revisão com explicação · opcional</span>
+        </summary>
+        <div id="quiz"></div>
+      </details>
     </div>
   </section>
 </main>
@@ -387,6 +418,7 @@ footer.foot a{color:var(--muted)}
   </div>
 </div>
 
+<script src="assets/escada/casos.js"></script>
 <script>
 /* =====================================================================
    CONFIGURAÇÃO — edite aqui.
@@ -396,95 +428,11 @@ footer.foot a{color:var(--muted)}
    ===================================================================== */
 const CONFIG = {
   portal: 'index.html',
-  imagem: 'assets/escada/angio_14-007_3_f030.jpg',   // quadro 30 do vídeo
-  imagemQuadro: 30,
-  video: ['assets/escada/angio_14-007_3.webm', 'assets/escada/angio_14-007_3.mp4'], // WebM (leve) e MP4 (compatibilidade)
-  fps: 12.5,
-  totalQuadros: 179,
+  // Casos reais dos degraus 3 (imagem) e 4 (vídeo): ficam em assets/escada/casos.js.
+  // Para incluir um novo caso, use ferramentas/adicionar_caso.py (veja o LEIA-ME).
+  casos: window.CASOS_ESCADA || [],
   rotuloReferencia: 'IA: estenose',
-  modeloIA: 'Faster R-CNN NAS (Danilov et al., 2021)',
-
-  // true = caixas conferidas. As caixas abaixo foram extraídas automaticamente do vídeo de saída do
-  // artigo "14-007 (3)#faster_rcnn_nas_lowproposals_coco" (ferramentas/extrair_caixas_video.py).
   referenciaConfirmada: true,
-
-  // Caixa da etapa 3 (quadro 30)
-  imagemCaixa: {"x": 0.523, "y": 0.24, "w": 0.045, "h": 0.051},
-
-  // Etapa 4: caixa da lesão principal em cada quadro em que a rede a detectou (usada para corrigir
-  // o clique do aluno). Quadros sem detecção dentro da janela são interpolados.
-  videoQuadrosChave: [
-    {"f":27,"x":0.547,"y":0.271,"w":0.053,"h":0.047},
-    {"f":28,"x":0.543,"y":0.268,"w":0.045,"h":0.043},
-    {"f":29,"x":0.527,"y":0.256,"w":0.053,"h":0.051},
-    {"f":30,"x":0.523,"y":0.24,"w":0.045,"h":0.051},
-    {"f":31,"x":0.523,"y":0.236,"w":0.049,"h":0.043},
-    {"f":32,"x":0.504,"y":0.221,"w":0.057,"h":0.051},
-    {"f":33,"x":0.488,"y":0.229,"w":0.076,"h":0.051},
-    {"f":34,"x":0.492,"y":0.229,"w":0.061,"h":0.051},
-    {"f":35,"x":0.488,"y":0.225,"w":0.064,"h":0.059},
-    {"f":36,"x":0.496,"y":0.225,"w":0.057,"h":0.055},
-    {"f":37,"x":0.488,"y":0.225,"w":0.064,"h":0.047},
-    {"f":38,"x":0.492,"y":0.221,"w":0.057,"h":0.047},
-    {"f":39,"x":0.488,"y":0.213,"w":0.064,"h":0.051},
-    {"f":40,"x":0.488,"y":0.213,"w":0.057,"h":0.059},
-    {"f":41,"x":0.48,"y":0.209,"w":0.057,"h":0.051},
-    {"f":42,"x":0.473,"y":0.209,"w":0.053,"h":0.043},
-    {"f":46,"x":0.496,"y":0.244,"w":0.061,"h":0.047},
-    {"f":47,"x":0.512,"y":0.248,"w":0.053,"h":0.051},
-    {"f":48,"x":0.512,"y":0.256,"w":0.061,"h":0.043},
-    {"f":49,"x":0.508,"y":0.26,"w":0.072,"h":0.047},
-    {"f":50,"x":0.531,"y":0.268,"w":0.061,"h":0.051},
-    {"f":51,"x":0.539,"y":0.271,"w":0.061,"h":0.055},
-    {"f":52,"x":0.543,"y":0.275,"w":0.061,"h":0.047},
-    {"f":53,"x":0.547,"y":0.275,"w":0.057,"h":0.047},
-    {"f":54,"x":0.555,"y":0.275,"w":0.053,"h":0.047},
-    {"f":55,"x":0.555,"y":0.275,"w":0.061,"h":0.047},
-    {"f":56,"x":0.562,"y":0.275,"w":0.057,"h":0.051},
-    {"f":57,"x":0.559,"y":0.279,"w":0.057,"h":0.043},
-    {"f":58,"x":0.555,"y":0.279,"w":0.057,"h":0.043},
-    {"f":59,"x":0.551,"y":0.275,"w":0.057,"h":0.047},
-    {"f":60,"x":0.543,"y":0.268,"w":0.057,"h":0.047},
-    {"f":61,"x":0.531,"y":0.256,"w":0.064,"h":0.039},
-    {"f":62,"x":0.535,"y":0.248,"w":0.057,"h":0.047},
-    {"f":63,"x":0.527,"y":0.248,"w":0.057,"h":0.039},
-    {"f":64,"x":0.527,"y":0.248,"w":0.053,"h":0.047},
-    {"f":65,"x":0.523,"y":0.252,"w":0.057,"h":0.047},
-    {"f":66,"x":0.523,"y":0.252,"w":0.057,"h":0.055},
-    {"f":67,"x":0.516,"y":0.248,"w":0.068,"h":0.051},
-    {"f":68,"x":0.523,"y":0.248,"w":0.057,"h":0.047},
-    {"f":69,"x":0.531,"y":0.248,"w":0.049,"h":0.047},
-    {"f":70,"x":0.523,"y":0.248,"w":0.053,"h":0.047},
-    {"f":71,"x":0.52,"y":0.244,"w":0.049,"h":0.043},
-    {"f":72,"x":0.508,"y":0.236,"w":0.057,"h":0.047},
-    {"f":73,"x":0.52,"y":0.244,"w":0.053,"h":0.051},
-    {"f":74,"x":0.512,"y":0.252,"w":0.064,"h":0.047},
-    {"f":75,"x":0.523,"y":0.264,"w":0.061,"h":0.055},
-    {"f":76,"x":0.527,"y":0.271,"w":0.061,"h":0.043},
-    {"f":77,"x":0.535,"y":0.268,"w":0.053,"h":0.047},
-    {"f":78,"x":0.543,"y":0.271,"w":0.057,"h":0.047},
-    {"f":79,"x":0.551,"y":0.279,"w":0.057,"h":0.043},
-    {"f":80,"x":0.559,"y":0.283,"w":0.057,"h":0.047},
-    {"f":81,"x":0.566,"y":0.291,"w":0.057,"h":0.043},
-    {"f":82,"x":0.57,"y":0.291,"w":0.053,"h":0.047},
-    {"f":83,"x":0.578,"y":0.295,"w":0.053,"h":0.043},
-    {"f":84,"x":0.574,"y":0.291,"w":0.057,"h":0.043},
-    {"f":85,"x":0.57,"y":0.287,"w":0.064,"h":0.047},
-    {"f":86,"x":0.582,"y":0.287,"w":0.057,"h":0.047},
-    {"f":87,"x":0.582,"y":0.291,"w":0.053,"h":0.043},
-    {"f":88,"x":0.582,"y":0.291,"w":0.053,"h":0.047},
-    {"f":89,"x":0.574,"y":0.287,"w":0.053,"h":0.043},
-    {"f":90,"x":0.559,"y":0.275,"w":0.061,"h":0.047},
-    {"f":91,"x":0.555,"y":0.271,"w":0.057,"h":0.043},
-    {"f":92,"x":0.547,"y":0.26,"w":0.064,"h":0.051},
-    {"f":93,"x":0.547,"y":0.252,"w":0.049,"h":0.055},
-    {"f":94,"x":0.539,"y":0.248,"w":0.045,"h":0.051},
-    {"f":95,"x":0.551,"y":0.252,"w":0.045,"h":0.055}
-  ],
-  videoJanela: [27, 95],
-
-  // Todas as caixas que a rede desenhou em cada quadro (inclusive falsos positivos), só para exibição.
-  deteccoesIA: {"17":[[0.73,0.088,0.107,0.09]],"27":[[0.547,0.271,0.053,0.047]],"28":[[0.543,0.268,0.045,0.043]],"29":[[0.527,0.256,0.053,0.051]],"30":[[0.523,0.24,0.045,0.051]],"31":[[0.523,0.236,0.049,0.043],[0.305,0.271,0.1,0.047]],"32":[[0.504,0.221,0.057,0.051]],"33":[[0.488,0.229,0.076,0.051]],"34":[[0.492,0.229,0.061,0.051]],"35":[[0.488,0.225,0.064,0.059]],"36":[[0.496,0.225,0.057,0.055]],"37":[[0.488,0.225,0.064,0.047]],"38":[[0.492,0.221,0.057,0.047]],"39":[[0.488,0.213,0.064,0.051]],"40":[[0.488,0.213,0.057,0.059]],"41":[[0.48,0.209,0.057,0.051]],"42":[[0.473,0.209,0.053,0.043]],"43":[[0.418,0.303,0.096,0.055]],"44":[[0.414,0.307,0.096,0.059]],"45":[[0.285,0.146,0.057,0.043],[0.348,0.256,0.068,0.051]],"46":[[0.496,0.244,0.061,0.047]],"47":[[0.512,0.248,0.053,0.051]],"48":[[0.512,0.256,0.061,0.043]],"49":[[0.508,0.26,0.072,0.047]],"50":[[0.531,0.268,0.061,0.051]],"51":[[0.539,0.271,0.061,0.055]],"52":[[0.543,0.275,0.061,0.047]],"53":[[0.547,0.275,0.057,0.047]],"54":[[0.555,0.275,0.053,0.047]],"55":[[0.555,0.275,0.061,0.047]],"56":[[0.562,0.275,0.057,0.051]],"57":[[0.559,0.279,0.057,0.043]],"58":[[0.555,0.279,0.057,0.043],[0.195,0.416,0.033,0.027]],"59":[[0.551,0.275,0.057,0.047]],"60":[[0.543,0.268,0.057,0.047]],"61":[[0.531,0.256,0.064,0.039]],"62":[[0.535,0.248,0.057,0.047]],"63":[[0.527,0.248,0.057,0.039]],"64":[[0.527,0.248,0.053,0.047]],"65":[[0.523,0.252,0.057,0.047]],"66":[[0.523,0.252,0.057,0.055]],"67":[[0.516,0.248,0.068,0.051]],"68":[[0.523,0.248,0.057,0.047]],"69":[[0.531,0.248,0.049,0.047]],"70":[[0.523,0.248,0.053,0.047]],"71":[[0.52,0.244,0.049,0.043]],"72":[[0.508,0.236,0.057,0.047]],"73":[[0.52,0.244,0.053,0.051]],"74":[[0.512,0.252,0.064,0.047]],"75":[[0.523,0.264,0.061,0.055]],"76":[[0.527,0.271,0.061,0.043]],"77":[[0.535,0.268,0.053,0.047]],"78":[[0.543,0.271,0.057,0.047],[0.699,0.381,0.072,0.055]],"79":[[0.551,0.279,0.057,0.043]],"80":[[0.559,0.283,0.057,0.047]],"81":[[0.566,0.291,0.057,0.043]],"82":[[0.57,0.291,0.053,0.047]],"83":[[0.578,0.295,0.053,0.043]],"84":[[0.574,0.291,0.057,0.043]],"85":[[0.57,0.287,0.064,0.047]],"86":[[0.324,0.229,0.053,0.043],[0.582,0.287,0.057,0.047]],"87":[[0.418,0.217,0.041,0.035],[0.582,0.291,0.053,0.043]],"88":[[0.418,0.213,0.041,0.039],[0.582,0.291,0.053,0.047]],"89":[[0.414,0.201,0.049,0.043],[0.574,0.287,0.053,0.043]],"90":[[0.559,0.275,0.061,0.047]],"91":[[0.555,0.271,0.057,0.043]],"92":[[0.547,0.26,0.064,0.051]],"93":[[0.547,0.252,0.049,0.055]],"94":[[0.539,0.248,0.045,0.051]],"95":[[0.551,0.252,0.045,0.055]],"100":[[0.383,0.025,0.076,0.055]],"102":[[0.332,0.143,0.041,0.047]],"106":[[0.254,0.197,0.033,0.07]],"107":[[0.703,0.334,0.053,0.062]],"109":[[0.746,0.1,0.096,0.07]],"110":[[0.754,0.1,0.092,0.082]],"115":[[0.422,0.213,0.041,0.051]],"116":[[0.375,0.17,0.057,0.051]],"117":[[0.543,0.291,0.072,0.051]],"119":[[0.34,0.373,0.029,0.035]],"140":[[0.668,0.029,0.096,0.078]],"141":[[0.738,0.072,0.119,0.074]],"142":[[0.684,0.033,0.076,0.07]],"164":[[0.297,0.049,0.053,0.051]]},
 
   margem: 0.03,            // folga do acerto ao redor da caixa (3% da largura da imagem)
   // Endereço do Google Apps Script que grava as respostas numa planilha (veja ferramentas/salvar_respostas_planilha.gs).
@@ -500,6 +448,24 @@ const LS_KEY = 'escadaVascular.calibracao';
 let cfg = JSON.parse(JSON.stringify(CONFIG));
 if (CALIB) { try { const s = localStorage.getItem(LS_KEY); if (s) Object.assign(cfg, JSON.parse(s)); } catch (e) {} }
 $('back-link').href = cfg.portal;
+
+/* ---- Casos reais: o caso ativo é copiado para cfg (imagem, vídeo, caixas da IA) ---- */
+const CASE_KEYS=['id','serie','vaso','modeloIA','imagem','imagemQuadro','video','fps','totalQuadros','imagemCaixa','videoQuadrosChave','videoJanela','deteccoesIA','notaImagem','notaVideo','dicaImagem','dicaVideo'];
+const NCASOS = cfg.casos.length;
+function applyCase(i){
+  const c=JSON.parse(JSON.stringify(cfg.casos[i]||{}));
+  if (CALIB){ try{ const sv=localStorage.getItem(LS_KEY+'.'+c.id); if(sv) Object.assign(c,JSON.parse(sv)); }catch(e){} }
+  CASE_KEYS.forEach(k=>{ cfg[k]=c[k]; });
+}
+// Tarefas: degraus 1 e 2 (modelos) + um caso por degrau 3 e 4
+const TASKS=[{deg:1,caso:0},{deg:2,caso:0}].concat(cfg.casos.map((_,i)=>({deg:3,caso:i})), cfg.casos.map((_,i)=>({deg:4,caso:i})));
+const nCasos = d => (d===3||d===4) ? NCASOS : 1;
+const tIdx = (d,c) => TASKS.findIndex(t=>t.deg===d && t.caso===((d===3||d===4)?c:0));
+const novaTarefa = () => ({ tentativas:0, acertou:false, dicas:0, concluida:false, hist:[] });
+const curTask = () => state.st[tIdx(state.cur,state.caso)];
+const degTasks = d => TASKS.map((t,i)=>t.deg===d?state.st[i]:null).filter(Boolean);
+const degDone = d => degTasks(d).every(t=>t.concluida);
+const hits = () => state.st.filter(t=>t.acertou).length;
 
 const STAGES = [
   { n:1, short:'Modelo simples', kind:'svg',
@@ -537,15 +503,15 @@ const STAGES = [
     title:'Imagem real: imagem de fluoroscopia de angiografia coronariana',
     instr:'Quadro real de um exame do banco de dados público. Marque onde você suspeita de estenose. Depois compare com a caixa desenhada pela rede neural do artigo.',
     hints:[
-      'Ignore o cateter (o tubo em laço à esquerda) e os objetos metálicos; eles não são vasos.',
+      'Ignore o cateter e os objetos metálicos; eles não são vasos.',
       'Siga os vasos que saem da ponta do cateter e compare o calibre de cada segmento.',
       'Concentre-se nos segmentos proximais, mais próximos da saída do contraste.'
     ],
     factors:[
-      '<b>Opacificação parcial:</b> neste quadro o contraste ainda está chegando; vasos mal preenchidos podem parecer estreitos sem ter lesão.',
+      '<b>Opacificação parcial:</b> no início da injeção o contraste ainda está chegando; vasos mal preenchidos podem parecer estreitos sem ter lesão.',
       '<b>Ruído e atenuação:</b> a imagem real tem granulação e variação de brilho que não existem no modelo.',
       '<b>Sobreposição:</b> em uma única projeção, ramos se cruzam e se escondem.',
-      '<b>Papel da IA:</b> a caixa de referência deste quadro foi desenhada por uma rede neural convolucional (Faster R-CNN), treinada com milhares de quadros anotados, que aponta regiões suspeitas para o profissional revisar.'
+      '<b>Papel da IA:</b> a caixa de referência deste quadro foi desenhada por uma rede neural convolucional (Faster R-CNN ou R-FCN), treinada com milhares de quadros anotados, que aponta regiões suspeitas para o profissional revisar.'
     ]
   },
   { n:4, short:'Vídeo', kind:'vid',
@@ -560,15 +526,15 @@ const STAGES = [
       '<b>Movimento cardíaco:</b> a lesão muda de posição a cada quadro; é preciso rastrear o segmento ao longo do ciclo.',
       '<b>Fases do contraste:</b> chegada, preenchimento máximo e lavagem. A análise deve usar os quadros de melhor opacificação.',
       '<b>Análise quadro a quadro:</b> sistemas de IA em tempo real processam cada quadro do vídeo e mantêm a detecção enquanto o vaso se move (Danilov et al., 2021).',
-      '<b>A IA também erra:</b> neste vídeo a rede não detecta a lesão em alguns quadros (falso negativo) e, na fase de lavagem, marca regiões sem lesão (falso positivo). Por isso a decisão final é do profissional.'
+      '<b>A IA também erra:</b> a rede pode deixar de detectar a lesão em alguns quadros (falso negativo) ou marcar regiões sem lesão (falso positivo). Por isso a decisão final é do profissional.'
     ]
   },
   { n:5, short:'Feedback', kind:'final' }
 ];
 
 const state = {
-  cur: 1, xp: 0,
-  st: STAGES.slice(0,4).map(() => ({ tentativas:0, acertou:false, dicas:0, concluida:false, hist:[] })),
+  cur: 1, caso: 0, xp: 0,
+  st: TASKS.map(novaTarefa),
   pick: null,            // {x,y} em 0..1000 e quadro (vídeo)
   confirmed: false, refOn: false, hintIdx: 0,
   quiz: {}, quizDone: 0
@@ -580,23 +546,23 @@ function renderStairs(){
   STAGES.forEach((s,i) => {
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'step';
-    const unlocked = FREE || i === 0 || state.st[i-1]?.concluida || (i === 4 && state.st[3].concluida);
-    const done = i < 4 && state.st[i].concluida;
+    const unlocked = FREE || i === 0 || degDone(i);
+    const done = i < 4 && degDone(i+1);
     if (s.n === state.cur) b.classList.add('on');
     if (done) b.classList.add('done');
     b.disabled = !unlocked;
-    b.innerHTML = `<span class="st">${done ? (state.st[i].acertou ? '✔' : '•') : (unlocked ? '' : '🔒')}</span><span class="n">0${s.n}</span><span class="t">${s.short}</span>`;
+    b.innerHTML = `<span class="st">${done ? (degTasks(i+1).every(t=>t.acertou) ? '✔' : '•') : (unlocked ? '' : '🔒')}</span><span class="n">0${s.n}</span><span class="t">${s.short}</span>`;
     b.setAttribute('aria-label', `Etapa ${s.n}: ${s.short}${unlocked ? '' : ' (bloqueada)'}`);
     if (s.n === state.cur) b.setAttribute('aria-current','step');
     b.onclick = () => goStage(s.n);
     nav.appendChild(b);
   });
   $('xp').textContent = state.xp;
-  $('acertos-chip').textContent = `✔ ${state.st.filter(s=>s.acertou).length}/4`;
+  $('acertos-chip').textContent = `✔ ${hits()}/${TASKS.length}`;
 }
 
-function goStage(n){
-  state.cur = n; state.pick = null; state.confirmed = false; state.refOn = false; state.hintIdx = 0;
+function goStage(n, caso=0){
+  state.cur = n; state.caso = (n===3||n===4) ? Math.min(caso, Math.max(0,NCASOS-1)) : 0; state.pick = null; state.confirmed = false; state.refOn = false; state.hintIdx = 0;
   const vid = $('realvid'); vid.pause();
   if (n === 5) { $('lab').hidden = true; $('final').hidden = false; renderFinal(); renderStairs(); window.scrollTo({top:0,behavior:'smooth'}); return; }
   $('lab').hidden = false; $('final').hidden = true;
@@ -604,14 +570,18 @@ function goStage(n){
   $('st-eyebrow').textContent = `Degrau ${n} de 5`;
   $('st-title').textContent = s.title;
   $('st-instr').textContent = s.instr;
+  if (s.kind==='img' || s.kind==='vid'){ applyCase(state.caso); if (CALIB) calPersist(); }
+  renderCases();
   $('scene').style.display = s.kind === 'svg' ? '' : 'none';
   $('realimg').hidden = s.kind !== 'img';
   vid.hidden = s.kind !== 'vid';
   $('vctl').hidden = s.kind !== 'vid';
   if (s.kind === 'svg') buildScene(n);
-  if (s.kind === 'img' && !$('realimg').src) $('realimg').src = cfg.imagem;
+  if (s.kind === 'img') $('realimg').src = cfg.imagem;
   if (s.kind === 'vid') {
-    if (!vid.childElementCount) {
+    if (vid.dataset.caso !== cfg.id) {
+      vid.dataset.caso = cfg.id; vid.innerHTML = '';
+      $('v-seek').max = cfg.totalQuadros-1;
       [].concat(cfg.video).forEach(src => { const so=document.createElement('source'); so.src=src; so.type= src.endsWith('.webm') ? 'video/webm' : 'video/mp4'; vid.appendChild(so); });
       vid.load();
     }
@@ -626,6 +596,20 @@ function goStage(n){
   renderHist(); renderStairs(); updateHud();
 }
 
+function renderCases(){
+  const box=$('cases'); const n=nCasos(state.cur);
+  if (!(state.cur===3||state.cur===4) || n<2){ box.hidden=true; box.innerHTML=''; return; }
+  box.hidden=false; box.innerHTML='';
+  cfg.casos.forEach((c,i)=>{
+    const t=state.st[tIdx(state.cur,i)];
+    const reach = FREE || i===0 || state.st[tIdx(state.cur,i-1)].concluida;
+    const b=document.createElement('button'); b.type='button'; b.className='case'+(i===state.caso?' on':'');
+    b.disabled=!reach;
+    b.innerHTML=`<span class="cn">Caso ${i+1} de ${n}</span><span class="cs">${c.serie}${c.vaso?' · '+c.vaso:''}</span><span class="ck">${t.concluida?(t.acertou?'✔':'•'):(reach?'':'🔒')}</span>`;
+    b.onclick=()=>goStage(state.cur,i);
+    box.appendChild(b);
+  });
+}
 function resetUI(){
   $('pin').setAttribute('hidden',''); $('refg').setAttribute('hidden','');
   $('pinc').setAttribute('fill','rgba(251,191,36,.45)'); $('pinc').setAttribute('stroke','#fbbf24'); $('pinring').style.display = '';
@@ -795,7 +779,7 @@ $('btn-confirm').onclick = () => {
     return;
   }
   if (!state.pick) return;
-  const s=STAGES[state.cur-1], st=state.st[state.cur-1];
+  const s=STAGES[state.cur-1], st=curTask();
   const hit=isHit(state.pick);
   if (hit===null){
     setFb('bad','Escolha um quadro com contraste', 'Nesse quadro o vaso ainda não está bem opacificado (ou o contraste já saiu). Avance o vídeo até os vasos ficarem escuros e marque de novo. Esta marcação não conta como tentativa.');
@@ -814,13 +798,16 @@ $('btn-confirm').onclick = () => {
     $('pinc').setAttribute('fill','rgba(248,113,113,.45)'); $('pinc').setAttribute('stroke','#f87171');
     setFb('bad','Ainda não foi desta vez', 'A marcação ficou fora da região de referência. Isso é comum: leia os fatores deste caso, abra a referência (ou a detecção da IA) e tente de novo.');
   }
-  $('factors').innerHTML = s.factors.map(f=>`<li>${f}</li>`).join('');
+  const nota = s.kind==='img' ? cfg.notaImagem : s.kind==='vid' ? cfg.notaVideo : '';
+  $('factors').innerHTML = s.factors.map(f=>`<li>${f}</li>`).join('') + (nota ? `<li><b>Neste caso (${cfg.serie}):</b> ${nota}</li>` : '');
   $('formula').hidden=!s.formula; $('formula').textContent=s.formula||'';
   $('factors-card').hidden=false;
   $('btn-ref').disabled=false;
   $('btn-confirm').textContent='Tentar novamente';
   $('btn-hint').disabled=true;
-  $('btn-next').hidden=false; $('btn-next').textContent = state.cur===4 ? 'Ir para as questões →' : 'Próximo degrau →';
+  const temMais = state.caso < nCasos(state.cur)-1;
+  $('btn-next').hidden=false; $('btn-next').textContent = temMais ? 'Próximo caso →' : state.cur===4 ? 'Ir para o feedback →' : 'Próximo degrau →';
+  renderCases();
   renderHist(); renderStairs();
 };
 
@@ -830,15 +817,17 @@ $('btn-ref').onclick = () => {
   const s=STAGES[state.cur-1];
   drawRef(s.kind==='vid' ? (state.pick?.f ?? curFrame()) : 0);
   updateHud();
-  if (state.refOn && s.kind==='vid') setFb('info','Detecção da IA no vídeo',`Caixas desenhadas pela rede ${cfg.modeloIA} em cada quadro. Dê play: a caixa verde acompanha a lesão enquanto o coração bate. Repare que em alguns quadros a rede não detecta nada e, na lavagem do contraste (após o quadro ~100), marca regiões erradas (caixas amarelas). A IA também erra, por isso o profissional revisa.`);
+  if (state.refOn && s.kind==='vid') setFb('info','Detecção da IA no vídeo',`Caixas desenhadas pela rede ${cfg.modeloIA} em cada quadro. Dê play: a caixa verde acompanha a lesão enquanto o coração bate. ${cfg.notaVideo||''} A IA também erra, por isso o profissional revisa.`);
   if (state.refOn && s.kind==='img') setFb('info','Detecção da IA neste quadro',`Caixa desenhada pela rede ${cfg.modeloIA} no quadro ${cfg.imagemQuadro}. Compare com sua marcação.`);
 };
-$('btn-next').onclick = () => goStage(state.cur+1);
+$('btn-next').onclick = () => (state.caso < nCasos(state.cur)-1) ? goStage(state.cur, state.caso+1) : goStage(state.cur+1);
 
 $('btn-hint').onclick = () => {
-  const s=STAGES[state.cur-1], st=state.st[state.cur-1];
+  const s=STAGES[state.cur-1], st=curTask();
+  const hints = s.hints.slice(); const dc = s.kind==='img' ? cfg.dicaImagem : s.kind==='vid' ? cfg.dicaVideo : '';
+  if (dc) hints[hints.length-1]=dc;
   if (state.hintIdx>=s.hints.length) return;
-  const msg=s.hints[state.hintIdx]; state.hintIdx++; st.dicas++;
+  const msg=hints[state.hintIdx]; state.hintIdx++; st.dicas++;
   setFb('info',`Dica ${state.hintIdx} de ${s.hints.length}`, msg);
   $('btn-hint').textContent = state.hintIdx>=s.hints.length ? 'Sem mais dicas' : `💡 Dica (${state.hintIdx}/${s.hints.length})`;
   if (state.hintIdx>=s.hints.length) $('btn-hint').disabled=true;
@@ -846,7 +835,7 @@ $('btn-hint').onclick = () => {
 
 function renderHist(){
   if (state.cur>4) return;
-  const h=state.st[state.cur-1].hist;
+  const h=curTask().hist;
   $('hist').innerHTML = h.length ? h.map(x=>`<li>${x}</li>`).join('') : '<li>Nenhuma tentativa ainda.</li>';
 }
 
@@ -855,7 +844,7 @@ function updateHud(){
   const s=STAGES[state.cur-1]; if(!s||s.kind==='final') return;
   const tl=$('hud-tl'), tr=$('hud-tr'), bl=$('hud-bl'), br=$('hud-br');
   if (s.kind==='svg'){ tl.textContent='MODELO DIDÁTICO'; tr.innerHTML=s.n===1?'SEM RUÍDO':'RUÍDO + SOBREPOSIÇÃO'; bl.textContent='Degrau '+s.n; }
-  else { tl.innerHTML='DATASET 14‑007(3)'; tr.innerHTML = s.kind==='img' ? `QUADRO ${cfg.imagemQuadro}` : `${String(cfg.fps).replace('.',',')} QPS`; bl.textContent = s.kind==='img' ? 'Imagem estática' : 'Cine'; }
+  else { tl.innerHTML='DATASET '+(cfg.serie||''); tr.innerHTML = s.kind==='img' ? `QUADRO ${cfg.imagemQuadro}` : `${String(cfg.fps).replace('.',',')} QPS`; bl.textContent = s.kind==='img' ? 'Imagem estática' : 'Cine'; }
   const prov = s.kind!=='svg' && !cfg.referenciaConfirmada && (state.refOn || CALIB);
   br.hidden = !(prov || state.refOn);
   br.className = 'hud br ' + (prov ? 'prov' : 'refon');
@@ -898,9 +887,10 @@ const norm = b => ({x:r3(b.x/1000),y:r3(b.y/1000),w:r3(b.w/1000),h:r3(b.h/1000)}
 const fmtBox = b => `x=${b.x} y=${b.y} w=${b.w} h=${b.h}`;
 function calStatus(t){ $('cal-status').textContent=t; }
 function calPersist(){
+  if (!cfg.id) return;
   const out={ referenciaConfirmada:cfg.referenciaConfirmada, imagemCaixa:cfg.imagemCaixa, videoQuadrosChave:[...cfg.videoQuadrosChave].sort((a,b)=>a.f-b.f), videoJanela:cfg.videoJanela };
   $('cal-json').value = JSON.stringify(out,null,2);
-  try{ localStorage.setItem(LS_KEY, JSON.stringify(out)); }catch(e){}
+  try{ localStorage.setItem(LS_KEY+'.'+cfg.id, JSON.stringify(out)); }catch(e){}
   $('cal-confirmed').checked=!!cfg.referenciaConfirmada;
   updateHud();
 }
@@ -915,10 +905,10 @@ $('cal-win-start').onclick = () => { cfg.videoJanela=[curFrame(),cfg.videoJanela
 $('cal-win-end').onclick = () => { cfg.videoJanela=[cfg.videoJanela[0],curFrame()]; calPersist(); calStatus(`Janela termina no quadro ${curFrame()}.`); };
 $('cal-clear-kf').onclick = () => { cfg.videoQuadrosChave=[]; calPersist(); calStatus('Quadros‑chave apagados.'); };
 $('cal-confirmed').onchange = e => { cfg.referenciaConfirmada=e.target.checked; calPersist(); };
-$('cal-reset').onclick = () => { try{localStorage.removeItem(LS_KEY);}catch(e){} cfg=JSON.parse(JSON.stringify(CONFIG)); calPersist(); try{localStorage.removeItem(LS_KEY);}catch(e){} calStatus('Valores do arquivo restaurados.'); drawRef(curFrame()); };
+$('cal-reset').onclick = () => { try{localStorage.removeItem(LS_KEY+'.'+cfg.id);}catch(e){} applyCase(state.caso); calPersist(); try{localStorage.removeItem(LS_KEY+'.'+cfg.id);}catch(e){} calStatus('Valores do arquivo restaurados.'); drawRef(curFrame()); };
 $('cal-copy').onclick = () => {
   const ta=$('cal-json'); const t=ta.value;
-  const ok=()=>calStatus('JSON copiado. Cole no CONFIG do arquivo EscadaVascular.html.');
+  const ok=()=>calStatus(`JSON copiado. Cole os valores no caso ${cfg.serie} em assets/escada/casos.js.`);
   const fb=()=>{ ta.focus(); ta.select(); calStatus('Selecionei o texto: use Ctrl+C para copiar.'); };
   if (navigator.clipboard) navigator.clipboard.writeText(t).then(ok,fb); else fb();
 };
@@ -958,8 +948,9 @@ const LIKERT = [
 function renderFinal(){
   const names=['Modelo simples','Modelo complexo','Imagem real','Vídeo'];
   $('summary').innerHTML = `<div><div class="v">${state.xp}</div><div class="l">XP acumulado</div></div>` +
-    state.st.map((s,i)=>`<div><div class="v">${s.acertou?'✔':(s.tentativas?'✖':'–')} ${s.tentativas}</div><div class="l">${names[i]} · tentativas${s.dicas?` · ${s.dicas} dica(s)`:''}</div></div>`).join('') +
-    `<div><div class="v" id="quiz-score">${quizScore()}/${QUIZ.length}</div><div class="l">Questões corretas</div></div>`;
+    [1,2,3,4].map(d=>{ const ts=degTasks(d), ac=ts.filter(t=>t.acertou).length, te=ts.reduce((a,t)=>a+t.tentativas,0), di=ts.reduce((a,t)=>a+t.dicas,0);
+      return `<div><div class="v">${ac}/${ts.length} ✔</div><div class="l">${names[d-1]} · ${te} tentativa(s)${di?` · ${di} dica(s)`:''}</div></div>`; }).join('') +
+    `<div id="quiz-tile" ${Object.keys(state.quiz).length?'':'hidden'}><div class="v" id="quiz-score">${quizScore()}/${Object.keys(state.quiz).length}</div><div class="l">Questões de revisão (opcional)</div></div>`;
   if ($('quiz').childElementCount) return;
   $('quiz').innerHTML = QUIZ.map((q,i)=>`
     <div class="q" id="q${i}">
@@ -982,13 +973,14 @@ function answer(i,j){
   const ex=box.querySelector('.expl'); ex.hidden=false;
   ex.innerHTML=`<b style="color:${j===q.a?'var(--good)':'var(--warn)'}">${j===q.a?'Correto.':'Resposta correta: '+'ABCD'[q.a]+'.'}</b> ${q.e}`;
   if (j===q.a) state.xp+=15;
-  $('quiz-score').textContent=`${quizScore()}/${QUIZ.length}`; renderStairs();
+  $('quiz-tile').hidden=false; $('quiz-score').textContent=`${quizScore()}/${Object.keys(state.quiz).length}`; renderStairs();
 }
 
 function buildRecord(){
   const lk=LIKERT.map((_,i)=>{ const c=document.querySelector(`input[name=lk${i}]:checked`); return c?c.value:''; });
   const r={ data:new Date().toISOString(), perfil:$('perfil').value, xp:state.xp };
-  ['simples','complexo','imagem','video'].forEach((k,i)=>{ const s=state.st[i]; r[k+'_acertou']=s.acertou?1:0; r[k+'_tentativas']=s.tentativas; r[k+'_dicas']=s.dicas; });
+  // Mesmas colunas de antes; nos degraus 3 e 4 os valores somam todos os casos (acertou = nº de casos acertados).
+  ['simples','complexo','imagem','video'].forEach((k,i)=>{ const ts=degTasks(i+1); r[k+'_acertou']=ts.filter(t=>t.acertou).length; r[k+'_tentativas']=ts.reduce((a,t)=>a+t.tentativas,0); r[k+'_dicas']=ts.reduce((a,t)=>a+t.dicas,0); });
   r.quiz_acertos=quizScore(); r.quiz_respondidas=Object.keys(state.quiz).length;
   lk.forEach((v,i)=>r['likert'+(i+1)]=v);
   r.comentario=$('comentario').value.replace(/\s+/g,' ').trim();
@@ -1009,8 +1001,8 @@ $('btn-send').onclick = () => {
   showCelebration();
 };
 $('btn-restart').onclick = () => {
-  state.xp=0; state.quiz={}; state.st=state.st.map(()=>({tentativas:0,acertou:false,dicas:0,concluida:false,hist:[]}));
-  $('quiz').innerHTML=''; $('likert').innerHTML=''; enviado=false; $('send-status').textContent='';
+  state.xp=0; state.quiz={}; state.st=TASKS.map(novaTarefa);
+  $('quiz').innerHTML=''; $('likert').innerHTML=''; $('learn').open=false; enviado=false; $('send-status').textContent='';
   goStage(1);
 };
 
@@ -1019,21 +1011,23 @@ $('btn-restart').onclick = () => {
 const STEPS=[[72,190],[136,160],[200,130],[264,100],[328,70]];
 const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 function desempenho(){
-  const les = state.st.filter(s=>s.acertou).length/4;
-  const qz = quizScore()/QUIZ.length;
-  return Math.round((les*0.5+qz*0.5)*100);
+  const les = hits()/TASKS.length;
+  const resp = Object.keys(state.quiz).length;
+  if (!resp) return Math.round(les*100);            // questões são opcionais
+  return Math.round((les*0.7 + quizScore()/resp*0.3)*100);
 }
 function showCelebration(){
   const pct=desempenho();
   const tier = pct>=75 ? 'top' : pct>=45 ? 'mid' : 'low';
   const T = {
     top:{t:'Parabéns! 🎉', m:'Você chegou ao topo da escada com olho clínico afiado. Reconheceu a estenose do esquema ao vídeo e entendeu como a IA ajuda (e também erra).', steps:5},
-    mid:{t:'Muito bem! 👏', m:'Você subiu boa parte da escada. Revise os degraus em que errou e as explicações das questões: falta pouco para o topo.', steps:3},
+    mid:{t:'Muito bem! 👏', m:'Você subiu boa parte da escada. Revise os degraus em que errou e, se quiser, abra as questões de revisão: falta pouco para o topo.', steps:3},
     low:{t:'Não desista! 💪', m:'Identificar estenose é difícil até para profissionais experientes. Da próxima vez você vai conseguir: use as dicas e compare com a detecção da IA.', steps:2}
   }[tier];
   $('cel-card').className='cel-card tier-'+tier;
   $('cel-title').textContent=T.t; $('cel-msg').textContent=T.m;
-  $('cel-score').textContent=`Lesões encontradas: ${state.st.filter(s=>s.acertou).length}/4 · Questões: ${quizScore()}/${QUIZ.length} · ${state.xp} XP`;
+  const nq=Object.keys(state.quiz).length;
+  $('cel-score').textContent=`Lesões encontradas: ${hits()}/${TASKS.length}${nq?` · Questões: ${quizScore()}/${nq}`:''} · ${state.xp} XP`;
   $('hero-mouth').setAttribute('d', tier==='low' ? 'M-6,-24 Q0,-27 6,-24' : 'M-7,-27 Q0,-18 7,-27');
   $('hero-arm').classList.toggle('arm-wave', tier!=='low');
   $('hero-arm').setAttribute('d', tier==='low' ? 'M16,-30 L26,-22' : 'M16,-30 L28,-42');
