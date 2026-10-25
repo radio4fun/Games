@@ -1,7 +1,487 @@
 // Casos reais da Escada Vascular (gerado por ferramentas/adicionar_caso.py).
-// A ordem da lista é a ordem em que os casos aparecem nos degraus 3 e 4.
+// A ordem da lista é a ordem em que os casos aparecem nos degraus 3 e 4 (do mais fácil ao mais difícil).
 // Textos editáveis: vaso, notaImagem, notaVideo, dicaImagem, dicaVideo.
 window.CASOS_ESCADA = [
+ {
+  "id": "14-010_21",
+  "serie": "14-010 (21)",
+  "vaso": "Coronária direita",
+  "modeloIA": "R-FCN ResNet-101 (Danilov et al., 2021)",
+  "imagem": "assets/escada/angio_14-010_21_f027.jpg",
+  "imagemQuadro": 27,
+  "video": [
+   "assets/escada/angio_14-010_21.webm",
+   "assets/escada/angio_14-010_21.mp4"
+  ],
+  "fps": 12.5,
+  "totalQuadros": 70,
+  "imagemCaixa": {
+   "x": 0.184,
+   "y": 0.436,
+   "w": 0.061,
+   "h": 0.07
+  },
+  "videoQuadrosChave": [
+   {
+    "f": 13,
+    "x": 0.164,
+    "y": 0.436,
+    "w": 0.061,
+    "h": 0.09
+   },
+   {
+    "f": 14,
+    "x": 0.137,
+    "y": 0.428,
+    "w": 0.061,
+    "h": 0.094
+   },
+   {
+    "f": 15,
+    "x": 0.129,
+    "y": 0.432,
+    "w": 0.064,
+    "h": 0.094
+   },
+   {
+    "f": 16,
+    "x": 0.125,
+    "y": 0.42,
+    "w": 0.061,
+    "h": 0.102
+   },
+   {
+    "f": 17,
+    "x": 0.129,
+    "y": 0.428,
+    "w": 0.061,
+    "h": 0.098
+   },
+   {
+    "f": 18,
+    "x": 0.113,
+    "y": 0.42,
+    "w": 0.061,
+    "h": 0.082
+   },
+   {
+    "f": 19,
+    "x": 0.094,
+    "y": 0.389,
+    "w": 0.064,
+    "h": 0.113
+   },
+   {
+    "f": 20,
+    "x": 0.102,
+    "y": 0.393,
+    "w": 0.061,
+    "h": 0.102
+   },
+   {
+    "f": 21,
+    "x": 0.109,
+    "y": 0.416,
+    "w": 0.064,
+    "h": 0.094
+   },
+   {
+    "f": 22,
+    "x": 0.137,
+    "y": 0.455,
+    "w": 0.057,
+    "h": 0.066
+   },
+   {
+    "f": 23,
+    "x": 0.16,
+    "y": 0.439,
+    "w": 0.061,
+    "h": 0.074
+   },
+   {
+    "f": 25,
+    "x": 0.203,
+    "y": 0.451,
+    "w": 0.061,
+    "h": 0.062
+   },
+   {
+    "f": 26,
+    "x": 0.191,
+    "y": 0.432,
+    "w": 0.061,
+    "h": 0.062
+   },
+   {
+    "f": 27,
+    "x": 0.184,
+    "y": 0.436,
+    "w": 0.061,
+    "h": 0.07
+   },
+   {
+    "f": 28,
+    "x": 0.152,
+    "y": 0.424,
+    "w": 0.061,
+    "h": 0.078
+   },
+   {
+    "f": 29,
+    "x": 0.133,
+    "y": 0.424,
+    "w": 0.057,
+    "h": 0.09
+   },
+   {
+    "f": 30,
+    "x": 0.121,
+    "y": 0.428,
+    "w": 0.057,
+    "h": 0.09
+   },
+   {
+    "f": 31,
+    "x": 0.117,
+    "y": 0.428,
+    "w": 0.061,
+    "h": 0.094
+   },
+   {
+    "f": 32,
+    "x": 0.117,
+    "y": 0.436,
+    "w": 0.061,
+    "h": 0.086
+   },
+   {
+    "f": 33,
+    "x": 0.098,
+    "y": 0.428,
+    "w": 0.061,
+    "h": 0.09
+   },
+   {
+    "f": 34,
+    "x": 0.074,
+    "y": 0.408,
+    "w": 0.061,
+    "h": 0.105
+   },
+   {
+    "f": 35,
+    "x": 0.086,
+    "y": 0.428,
+    "w": 0.061,
+    "h": 0.102
+   },
+   {
+    "f": 36,
+    "x": 0.098,
+    "y": 0.443,
+    "w": 0.064,
+    "h": 0.117
+   },
+   {
+    "f": 37,
+    "x": 0.121,
+    "y": 0.479,
+    "w": 0.057,
+    "h": 0.07
+   },
+   {
+    "f": 38,
+    "x": 0.137,
+    "y": 0.479,
+    "w": 0.061,
+    "h": 0.078
+   },
+   {
+    "f": 39,
+    "x": 0.156,
+    "y": 0.471,
+    "w": 0.061,
+    "h": 0.09
+   },
+   {
+    "f": 40,
+    "x": 0.172,
+    "y": 0.463,
+    "w": 0.053,
+    "h": 0.086
+   },
+   {
+    "f": 42,
+    "x": 0.152,
+    "y": 0.455,
+    "w": 0.061,
+    "h": 0.105
+   }
+  ],
+  "videoJanela": [
+   13,
+   42
+  ],
+  "deteccoesIA": {
+   "13": [
+    [
+     0.164,
+     0.436,
+     0.061,
+     0.09
+    ]
+   ],
+   "14": [
+    [
+     0.137,
+     0.428,
+     0.061,
+     0.094
+    ]
+   ],
+   "15": [
+    [
+     0.129,
+     0.432,
+     0.064,
+     0.094
+    ]
+   ],
+   "16": [
+    [
+     0.125,
+     0.42,
+     0.061,
+     0.102
+    ]
+   ],
+   "17": [
+    [
+     0.129,
+     0.428,
+     0.061,
+     0.098
+    ]
+   ],
+   "18": [
+    [
+     0.113,
+     0.42,
+     0.061,
+     0.082
+    ]
+   ],
+   "19": [
+    [
+     0.094,
+     0.389,
+     0.064,
+     0.113
+    ]
+   ],
+   "20": [
+    [
+     0.102,
+     0.393,
+     0.061,
+     0.102
+    ]
+   ],
+   "21": [
+    [
+     0.109,
+     0.416,
+     0.064,
+     0.094
+    ]
+   ],
+   "22": [
+    [
+     0.137,
+     0.455,
+     0.057,
+     0.066
+    ]
+   ],
+   "23": [
+    [
+     0.16,
+     0.439,
+     0.061,
+     0.074
+    ]
+   ],
+   "25": [
+    [
+     0.203,
+     0.451,
+     0.061,
+     0.062
+    ]
+   ],
+   "26": [
+    [
+     0.191,
+     0.432,
+     0.061,
+     0.062
+    ]
+   ],
+   "27": [
+    [
+     0.184,
+     0.436,
+     0.061,
+     0.07
+    ]
+   ],
+   "28": [
+    [
+     0.152,
+     0.424,
+     0.061,
+     0.078
+    ]
+   ],
+   "29": [
+    [
+     0.133,
+     0.424,
+     0.057,
+     0.09
+    ]
+   ],
+   "30": [
+    [
+     0.121,
+     0.428,
+     0.057,
+     0.09
+    ]
+   ],
+   "31": [
+    [
+     0.117,
+     0.428,
+     0.061,
+     0.094
+    ]
+   ],
+   "32": [
+    [
+     0.117,
+     0.436,
+     0.061,
+     0.086
+    ]
+   ],
+   "33": [
+    [
+     0.098,
+     0.428,
+     0.061,
+     0.09
+    ]
+   ],
+   "34": [
+    [
+     0.074,
+     0.408,
+     0.061,
+     0.105
+    ],
+    [
+     0.754,
+     0.686,
+     0.068,
+     0.039
+    ]
+   ],
+   "35": [
+    [
+     0.086,
+     0.428,
+     0.061,
+     0.102
+    ]
+   ],
+   "36": [
+    [
+     0.098,
+     0.443,
+     0.064,
+     0.117
+    ]
+   ],
+   "37": [
+    [
+     0.121,
+     0.479,
+     0.057,
+     0.07
+    ],
+    [
+     0.727,
+     0.693,
+     0.068,
+     0.043
+    ]
+   ],
+   "38": [
+    [
+     0.137,
+     0.479,
+     0.061,
+     0.078
+    ]
+   ],
+   "39": [
+    [
+     0.156,
+     0.471,
+     0.061,
+     0.09
+    ]
+   ],
+   "40": [
+    [
+     0.172,
+     0.463,
+     0.053,
+     0.086
+    ]
+   ],
+   "42": [
+    [
+     0.152,
+     0.455,
+     0.061,
+     0.105
+    ]
+   ]
+  },
+  "notaImagem": "coronária direita, vaso único e longo com trajeto em “C”. A lesão fica no terço médio, no segmento que desce após a primeira curva; compare o calibre logo antes e logo depois dela.",
+  "notaVideo": "Neste vídeo a rede detecta a lesão do quadro 13 ao 42, mas não a detecta em 2 quadro(s) (24, 41): falso negativo; em 2 quadro(s) marca regiões fora da lesão principal (caixas amarelas): falso positivo.",
+  "dicaImagem": "Siga a coronária direita a partir do cateter, contorne a primeira curva e procure um estreitamento no trecho que desce.",
+  "dicaVideo": "A lesão está no trecho descendente da coronária direita, após a primeira curva; use a câmera lenta para acompanhá-lo."
+ },
+ {
+  "id": "14-003_1",
+  "serie": "14-003 (1)",
+  "vaso": "Coronária direita",
+  "modeloIA": "R-FCN ResNet-101 (Danilov et al., 2021)",
+  "imagem": "assets/escada/angio_14-003_1_f005.jpg",
+  "imagemQuadro": 5,
+  "imagemCaixa": {
+   "x": 0.297,
+   "y": 0.529,
+   "w": 0.088,
+   "h": 0.07
+  },
+  "notaImagem": "coronária direita bem opacificada. A lesão fica no terço médio-distal, onde o vaso termina de descer e começa o trecho horizontal na parte inferior da imagem; compare o calibre antes e depois da curva.",
+  "dicaImagem": "Siga a coronária direita até a parte de baixo da imagem e procure um estreitamento na curva em que o vaso passa a correr na horizontal."
+ },
  {
   "id": "14-007_3",
   "serie": "14-007 (3)",
@@ -1215,469 +1695,5 @@ window.CASOS_ESCADA = [
   "notaVideo": "Neste vídeo a rede detecta a lesão do quadro 27 ao 95, mas não a detecta em 3 quadro(s) (43, 44, 45): falso negativo; em 25 quadro(s) marca regiões fora da lesão principal (caixas amarelas): falso positivo.",
   "dicaImagem": "Concentre-se nos segmentos proximais da coronária esquerda, mais próximos da saída do contraste.",
   "dicaVideo": "A lesão fica no mesmo segmento proximal que você analisou na imagem estática; acompanhe-o durante o batimento."
- },
- {
-  "id": "14-010_21",
-  "serie": "14-010 (21)",
-  "vaso": "Coronária direita",
-  "modeloIA": "R-FCN ResNet-101 (Danilov et al., 2021)",
-  "imagem": "assets/escada/angio_14-010_21_f027.jpg",
-  "imagemQuadro": 27,
-  "video": [
-   "assets/escada/angio_14-010_21.webm",
-   "assets/escada/angio_14-010_21.mp4"
-  ],
-  "fps": 12.5,
-  "totalQuadros": 70,
-  "imagemCaixa": {
-   "x": 0.184,
-   "y": 0.436,
-   "w": 0.061,
-   "h": 0.07
-  },
-  "videoQuadrosChave": [
-   {
-    "f": 13,
-    "x": 0.164,
-    "y": 0.436,
-    "w": 0.061,
-    "h": 0.09
-   },
-   {
-    "f": 14,
-    "x": 0.137,
-    "y": 0.428,
-    "w": 0.061,
-    "h": 0.094
-   },
-   {
-    "f": 15,
-    "x": 0.129,
-    "y": 0.432,
-    "w": 0.064,
-    "h": 0.094
-   },
-   {
-    "f": 16,
-    "x": 0.125,
-    "y": 0.42,
-    "w": 0.061,
-    "h": 0.102
-   },
-   {
-    "f": 17,
-    "x": 0.129,
-    "y": 0.428,
-    "w": 0.061,
-    "h": 0.098
-   },
-   {
-    "f": 18,
-    "x": 0.113,
-    "y": 0.42,
-    "w": 0.061,
-    "h": 0.082
-   },
-   {
-    "f": 19,
-    "x": 0.094,
-    "y": 0.389,
-    "w": 0.064,
-    "h": 0.113
-   },
-   {
-    "f": 20,
-    "x": 0.102,
-    "y": 0.393,
-    "w": 0.061,
-    "h": 0.102
-   },
-   {
-    "f": 21,
-    "x": 0.109,
-    "y": 0.416,
-    "w": 0.064,
-    "h": 0.094
-   },
-   {
-    "f": 22,
-    "x": 0.137,
-    "y": 0.455,
-    "w": 0.057,
-    "h": 0.066
-   },
-   {
-    "f": 23,
-    "x": 0.16,
-    "y": 0.439,
-    "w": 0.061,
-    "h": 0.074
-   },
-   {
-    "f": 25,
-    "x": 0.203,
-    "y": 0.451,
-    "w": 0.061,
-    "h": 0.062
-   },
-   {
-    "f": 26,
-    "x": 0.191,
-    "y": 0.432,
-    "w": 0.061,
-    "h": 0.062
-   },
-   {
-    "f": 27,
-    "x": 0.184,
-    "y": 0.436,
-    "w": 0.061,
-    "h": 0.07
-   },
-   {
-    "f": 28,
-    "x": 0.152,
-    "y": 0.424,
-    "w": 0.061,
-    "h": 0.078
-   },
-   {
-    "f": 29,
-    "x": 0.133,
-    "y": 0.424,
-    "w": 0.057,
-    "h": 0.09
-   },
-   {
-    "f": 30,
-    "x": 0.121,
-    "y": 0.428,
-    "w": 0.057,
-    "h": 0.09
-   },
-   {
-    "f": 31,
-    "x": 0.117,
-    "y": 0.428,
-    "w": 0.061,
-    "h": 0.094
-   },
-   {
-    "f": 32,
-    "x": 0.117,
-    "y": 0.436,
-    "w": 0.061,
-    "h": 0.086
-   },
-   {
-    "f": 33,
-    "x": 0.098,
-    "y": 0.428,
-    "w": 0.061,
-    "h": 0.09
-   },
-   {
-    "f": 34,
-    "x": 0.074,
-    "y": 0.408,
-    "w": 0.061,
-    "h": 0.105
-   },
-   {
-    "f": 35,
-    "x": 0.086,
-    "y": 0.428,
-    "w": 0.061,
-    "h": 0.102
-   },
-   {
-    "f": 36,
-    "x": 0.098,
-    "y": 0.443,
-    "w": 0.064,
-    "h": 0.117
-   },
-   {
-    "f": 37,
-    "x": 0.121,
-    "y": 0.479,
-    "w": 0.057,
-    "h": 0.07
-   },
-   {
-    "f": 38,
-    "x": 0.137,
-    "y": 0.479,
-    "w": 0.061,
-    "h": 0.078
-   },
-   {
-    "f": 39,
-    "x": 0.156,
-    "y": 0.471,
-    "w": 0.061,
-    "h": 0.09
-   },
-   {
-    "f": 40,
-    "x": 0.172,
-    "y": 0.463,
-    "w": 0.053,
-    "h": 0.086
-   },
-   {
-    "f": 42,
-    "x": 0.152,
-    "y": 0.455,
-    "w": 0.061,
-    "h": 0.105
-   }
-  ],
-  "videoJanela": [
-   13,
-   42
-  ],
-  "deteccoesIA": {
-   "13": [
-    [
-     0.164,
-     0.436,
-     0.061,
-     0.09
-    ]
-   ],
-   "14": [
-    [
-     0.137,
-     0.428,
-     0.061,
-     0.094
-    ]
-   ],
-   "15": [
-    [
-     0.129,
-     0.432,
-     0.064,
-     0.094
-    ]
-   ],
-   "16": [
-    [
-     0.125,
-     0.42,
-     0.061,
-     0.102
-    ]
-   ],
-   "17": [
-    [
-     0.129,
-     0.428,
-     0.061,
-     0.098
-    ]
-   ],
-   "18": [
-    [
-     0.113,
-     0.42,
-     0.061,
-     0.082
-    ]
-   ],
-   "19": [
-    [
-     0.094,
-     0.389,
-     0.064,
-     0.113
-    ]
-   ],
-   "20": [
-    [
-     0.102,
-     0.393,
-     0.061,
-     0.102
-    ]
-   ],
-   "21": [
-    [
-     0.109,
-     0.416,
-     0.064,
-     0.094
-    ]
-   ],
-   "22": [
-    [
-     0.137,
-     0.455,
-     0.057,
-     0.066
-    ]
-   ],
-   "23": [
-    [
-     0.16,
-     0.439,
-     0.061,
-     0.074
-    ]
-   ],
-   "25": [
-    [
-     0.203,
-     0.451,
-     0.061,
-     0.062
-    ]
-   ],
-   "26": [
-    [
-     0.191,
-     0.432,
-     0.061,
-     0.062
-    ]
-   ],
-   "27": [
-    [
-     0.184,
-     0.436,
-     0.061,
-     0.07
-    ]
-   ],
-   "28": [
-    [
-     0.152,
-     0.424,
-     0.061,
-     0.078
-    ]
-   ],
-   "29": [
-    [
-     0.133,
-     0.424,
-     0.057,
-     0.09
-    ]
-   ],
-   "30": [
-    [
-     0.121,
-     0.428,
-     0.057,
-     0.09
-    ]
-   ],
-   "31": [
-    [
-     0.117,
-     0.428,
-     0.061,
-     0.094
-    ]
-   ],
-   "32": [
-    [
-     0.117,
-     0.436,
-     0.061,
-     0.086
-    ]
-   ],
-   "33": [
-    [
-     0.098,
-     0.428,
-     0.061,
-     0.09
-    ]
-   ],
-   "34": [
-    [
-     0.074,
-     0.408,
-     0.061,
-     0.105
-    ],
-    [
-     0.754,
-     0.686,
-     0.068,
-     0.039
-    ]
-   ],
-   "35": [
-    [
-     0.086,
-     0.428,
-     0.061,
-     0.102
-    ]
-   ],
-   "36": [
-    [
-     0.098,
-     0.443,
-     0.064,
-     0.117
-    ]
-   ],
-   "37": [
-    [
-     0.121,
-     0.479,
-     0.057,
-     0.07
-    ],
-    [
-     0.727,
-     0.693,
-     0.068,
-     0.043
-    ]
-   ],
-   "38": [
-    [
-     0.137,
-     0.479,
-     0.061,
-     0.078
-    ]
-   ],
-   "39": [
-    [
-     0.156,
-     0.471,
-     0.061,
-     0.09
-    ]
-   ],
-   "40": [
-    [
-     0.172,
-     0.463,
-     0.053,
-     0.086
-    ]
-   ],
-   "42": [
-    [
-     0.152,
-     0.455,
-     0.061,
-     0.105
-    ]
-   ]
-  },
-  "notaImagem": "coronária direita, vaso único e longo com trajeto em “C”. A lesão fica no terço médio, no segmento que desce após a primeira curva; compare o calibre logo antes e logo depois dela.",
-  "notaVideo": "Neste vídeo a rede detecta a lesão do quadro 13 ao 42, mas não a detecta em 2 quadro(s) (24, 41): falso negativo; em 2 quadro(s) marca regiões fora da lesão principal (caixas amarelas): falso positivo.",
-  "dicaImagem": "Siga a coronária direita a partir do cateter, contorne a primeira curva e procure um estreitamento no trecho que desce.",
-  "dicaVideo": "A lesão está no trecho descendente da coronária direita, após a primeira curva; use a câmera lenta para acompanhá-lo."
  }
 ];

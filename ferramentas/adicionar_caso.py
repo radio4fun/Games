@@ -10,6 +10,12 @@ Uso (na pasta do site):
       --serie "14-010 (21)" --vaso "Coronária direita" \
       --modelo "R-FCN ResNet-101" --quadro-imagem 27
 
+Se só existir o vídeo COM detecção e uma imagem limpa (sem caixas) de um quadro dele,
+use --imagem no lugar de --entrada: o caso entra apenas no degrau 3 (imagem), e o script
+descobre sozinho a qual quadro a imagem corresponde.
+  python ferramentas/adicionar_caso.py --imagem "14_003_1_0005.bmp" \
+      --deteccao "14-003 (1)#rfcn_resnet101_coco.avi" --serie "14-003 (1)" --vaso "Coronária direita"
+
 O script:
   1. converte o vídeo SEM detecção para WebM e MP4 (assets/escada/);
   2. salva o quadro escolhido como imagem estática (.jpg);
@@ -21,7 +27,8 @@ import argparse, json, os, re, subprocess, sys
 import cv2, numpy as np
 
 ap = argparse.ArgumentParser()
-ap.add_argument('--entrada', required=True, help='vídeo sem detecção (#input.avi)')
+ap.add_argument('--entrada', help='vídeo sem detecção (#input.avi)')
+ap.add_argument('--imagem', help='imagem sem caixas de um quadro do vídeo (quando não há o #input.avi)')
 ap.add_argument('--deteccao', required=True, help='vídeo com as caixas da rede (#faster_rcnn..., #rfcn...)')
 ap.add_argument('--serie', required=True); ap.add_argument('--vaso', default='')
 ap.add_argument('--modelo', default='rede neural (Danilov et al., 2021)')
@@ -39,8 +46,22 @@ def ler(p):
         fs.append(f)
     if not fs: sys.exit(f'Não consegui ler {p}')
     return fs
-ent, det = ler(a.entrada), ler(a.deteccao)
-if len(ent) != len(det): print(f'Aviso: {len(ent)} quadros sem detecção e {len(det)} com detecção.')
+if not a.entrada and not a.imagem: sys.exit('Informe --entrada (vídeo sem detecção) ou --imagem (imagem sem caixas).')
+det = ler(a.deteccao)
+ent = ler(a.entrada) if a.entrada else None
+img_limpa = None
+if not ent:
+    img_limpa = cv2.imread(a.imagem)
+    if img_limpa is None: sys.exit(f'Não consegui ler {a.imagem}')
+    if img_limpa.shape[:2] != det[0].shape[:2]: img_limpa = cv2.resize(img_limpa, det[0].shape[1::-1])
+    t = cv2.cvtColor(img_limpa, cv2.COLOR_BGR2GRAY).astype(np.float32); mg = 40
+    notas = [(cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(f, cv2.COLOR_BGR2GRAY).astype(np.float32), t[mg:-mg, mg:-mg], cv2.TM_CCOEFF_NORMED))[1:4:2], n) for n, f in enumerate(det)]
+    (mx, loc), qimg = max(notas, key=lambda x: x[0][0])
+    print(f'A imagem corresponde ao quadro {qimg} (correlação {mx:.3f}, deslocamento {loc[0]-mg},{loc[1]-mg} px).')
+    if mx < 0.9 or abs(loc[0]-mg) > 3 or abs(loc[1]-mg) > 3:
+        sys.exit('A imagem não coincide com nenhum quadro do vídeo; confira se é da mesma série.')
+    if a.quadro_imagem is None: a.quadro_imagem = qimg
+if ent and len(ent) != len(det): print(f'Aviso: {len(ent)} quadros sem detecção e {len(det)} com detecção.')
 H, W = det[0].shape[:2]
 
 def caixas(f):
@@ -84,25 +105,29 @@ fora = sorted({n for n, cx in enumerate(Q) for b in cx if n not in trilha or b !
 slug = re.sub(r'[^0-9A-Za-z-]+', '_', a.serie).strip('_')
 os.makedirs(a.pasta, exist_ok=True)
 base = f'{a.pasta}/angio_{slug}'
-for ext, args in (('webm', ['-c:v', 'libvpx-vp9', '-b:v', '0', '-crf', '34', '-row-mt', '1']),
-                  ('mp4', ['-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '23', '-preset', 'slow', '-movflags', '+faststart'])):
-    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', a.entrada, *args, '-an', f'{base}.{ext}'], check=True)
-cv2.imwrite(f'{base}_f{qi:03d}.jpg', ent[qi], [cv2.IMWRITE_JPEG_QUALITY, 92])
+if ent:
+    for ext, args in (('webm', ['-c:v', 'libvpx-vp9', '-b:v', '0', '-crf', '34', '-row-mt', '1']),
+                      ('mp4', ['-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '23', '-preset', 'slow', '-movflags', '+faststart'])):
+        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', a.entrada, *args, '-an', f'{base}.{ext}'], check=True)
+cv2.imwrite(f'{base}_f{qi:03d}.jpg', ent[qi] if ent else img_limpa, [cv2.IMWRITE_JPEG_QUALITY, 92])
 
 caso = {
     'id': slug, 'serie': a.serie, 'vaso': a.vaso, 'modeloIA': f'{a.modelo} (Danilov et al., 2021)',
-    'imagem': f'{base}_f{qi:03d}.jpg', 'imagemQuadro': qi,
-    'video': [f'{base}.webm', f'{base}.mp4'], 'fps': a.fps, 'totalQuadros': len(ent),
-    'imagemCaixa': nb(trilha[qi]),
-    'videoQuadrosChave': [{'f': f, **nb(trilha[f])} for f in fs],
-    'videoJanela': [fs[0], fs[-1]],
-    'deteccoesIA': {str(n): [list(nb(b).values()) for b in cx] for n, cx in enumerate(Q) if cx},
-    'notaImagem': '', 'notaVideo': (
-        f'Neste vídeo a rede detecta a lesão do quadro {fs[0]} ao {fs[-1]}'
-        + (f', mas não a detecta em {len(sem_det)} quadro(s) ({", ".join(map(str, sem_det))}): falso negativo' if sem_det else '')
-        + (f'; em {len(fora)} quadro(s) marca regiões fora da lesão principal (caixas amarelas): falso positivo.' if fora else '; não há marcações fora da lesão principal.')),
-    'dicaImagem': '', 'dicaVideo': '',
+    'imagem': f'{base}_f{qi:03d}.jpg', 'imagemQuadro': qi, 'imagemCaixa': nb(trilha[qi]),
+    'notaImagem': '', 'dicaImagem': '',
 }
+if ent:  # o caso também entra no degrau 4 (vídeo)
+    caso.update({
+        'video': [f'{base}.webm', f'{base}.mp4'], 'fps': a.fps, 'totalQuadros': len(ent),
+        'videoQuadrosChave': [{'f': f, **nb(trilha[f])} for f in fs],
+        'videoJanela': [fs[0], fs[-1]],
+        'deteccoesIA': {str(n): [list(nb(b).values()) for b in cx] for n, cx in enumerate(Q) if cx},
+        'notaVideo': (
+            f'Neste vídeo a rede detecta a lesão do quadro {fs[0]} ao {fs[-1]}'
+            + (f', mas não a detecta em {len(sem_det)} quadro(s) ({", ".join(map(str, sem_det))}): falso negativo' if sem_det else '')
+            + (f'; em {len(fora)} quadro(s) marca regiões fora da lesão principal (caixas amarelas): falso positivo.' if fora else '; não há marcações fora da lesão principal.')),
+        'dicaVideo': '',
+    })
 arq = f'{a.pasta}/casos.js'
 casos = []
 if os.path.exists(arq):
@@ -110,7 +135,7 @@ if os.path.exists(arq):
     casos = json.loads(txt[txt.index('['):txt.rindex(']') + 1])
 antigo = next((c for c in casos if c['id'] == slug), None)
 if antigo:  # preserva textos didáticos editados à mão
-    for k in ('vaso', 'notaImagem', 'dicaImagem', 'dicaVideo'):
+    for k in ('vaso', 'notaImagem', 'notaVideo', 'dicaImagem', 'dicaVideo'):
         if antigo.get(k) and not caso.get(k): caso[k] = antigo[k]
     casos = [caso if c['id'] == slug else c for c in casos]
 else:
@@ -120,5 +145,5 @@ with open(arq, 'w', encoding='utf-8') as f:
             '// A ordem da lista é a ordem em que os casos aparecem nos degraus 3 e 4.\n'
             '// Textos editáveis: vaso, notaImagem, notaVideo, dicaImagem, dicaVideo.\n'
             'window.CASOS_ESCADA = ' + json.dumps(casos, ensure_ascii=False, indent=1) + ';\n')
-print(f'Caso {a.serie}: imagem = quadro {qi}; lesão nos quadros {fs[0]}–{fs[-1]} '
+print(f'Caso {a.serie} ({"imagem e vídeo" if ent else "só imagem, degrau 3"}): imagem = quadro {qi}; lesão nos quadros {fs[0]}–{fs[-1]} '
       f'({len(fs)} com detecção, {len(sem_det)} sem); {len(fora)} quadro(s) com caixas fora da lesão. Total de casos: {len(casos)}.')
