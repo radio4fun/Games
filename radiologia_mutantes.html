@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radiologia Caótica: A Ala dos Mutantes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Inter:wght@400;600;800&family=VT323&display=swap" rel="stylesheet">
+    <style>
+        .font-creepster { font-family: 'Creepster', cursive; }
+        .font-pixel { font-family: 'VT323', monospace; }
+        .glow-green { text-shadow: 0 0 10px #22c55e, 0 0 20px #22c55e; }
+        .glow-box { box-shadow: 0 0 20px rgba(34, 197, 94, 0.4); }
+        .crt-overlay {
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 6px 100%;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col items-center justify-between p-4 relative overflow-x-hidden">
+
+    <!-- CRT scanline overlay -->
+    <div class="absolute inset-0 crt-overlay pointer-events-none z-50"></div>
+
+    <!-- Header -->
+    <header class="w-full max-w-4xl text-center py-4 bg-slate-900/80 border-b-2 border-green-500/50 rounded-xl mb-4 glow-box backdrop-blur">
+        <h1 class="font-creepster text-4xl sm:text-5xl text-green-400 tracking-wider mb-1">Radiologia Caótica: A Ala dos Mutantes</h1>
+        <p class="font-pixel text-xl text-slate-400">"Tomou tanta radiação espalhada que agora brilha no escuro."</p>
+    </header>
+
+    <!-- Main Game Container -->
+    <main class="w-full max-w-4xl grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 flex-grow">
+        
+        <!-- Left Column: Controls & Metrics -->
+        <div class="bg-slate-900/90 border border-green-500/30 rounded-2xl p-5 flex flex-col justify-between shadow-xl">
+            <div>
+                <h2 class="font-pixel text-2xl text-green-400 mb-4 border-b border-green-500/20 pb-2">Painel do Estagiário</h2>
+                
+                <div class="space-y-4 mb-6">
+                    <div>
+                        <div class="flex justify-between text-sm font-semibold mb-1">
+                            <span class="text-slate-300">🔋 ENERGIA</span>
+                            <span id="stat-energy" class="text-yellow-400">100%</span>
+                        </div>
+                        <div class="w-full bg-slate-800 rounded-full h-3 overflow-hidden border border-slate-700">
+                            <div id="bar-energy" class="bg-yellow-500 h-full transition-all duration-300" style="width: 100%"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-sm font-semibold mb-1">
+                            <span class="text-slate-300">🩺 PACIÊNCIA PROFESSOR</span>
+                            <span id="stat-patience" class="text-cyan-400">50%</span>
+                        </div>
+                        <div class="w-full bg-slate-800 rounded-full h-3 overflow-hidden border border-slate-700">
+                            <div id="bar-patience" class="bg-cyan-500 h-full transition-all duration-300" style="width: 50%"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-sm font-semibold mb-1">
+                            <span class="text-slate-300">☢️ MUTAÇÃO RADIOATIVA</span>
+                            <span id="stat-mutation" class="text-green-400">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-800 rounded-full h-3 overflow-hidden border border-slate-700">
+                            <div id="bar-mutation" class="bg-green-500 h-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Avatar / Boneco Interativo em Tempo Real -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-green-500/30 mb-4 flex flex-col items-center">
+                    <p class="text-xs text-slate-400 mb-2 font-pixel">🧬 AVATAR DO ESTAGIÁRIO:</p>
+                    <div id="avatar-container" class="w-32 h-36 flex items-center justify-center relative transition-all duration-500">
+                        <!-- SVG Avatar dinâmico injetado via JS -->
+                    </div>
+                    <p id="avatar-status-text" class="font-pixel text-green-400 text-sm mt-2 text-center">Estagiário Saudável (Sem Mutação)</p>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <button onclick="triggerOverdose()" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg border border-red-400 transition transform active:scale-95 flex items-center justify-center gap-2 text-sm">
+                    ⚡ Disparar mAs Máximo!
+                </button>
+                <button onclick="applyLeadApron()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-2.5 px-4 rounded-xl shadow border border-emerald-500 transition transform active:scale-95 text-sm">
+                    🛡️ Avental de Chumbo
+                </button>
+                <button onclick="resetGame()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2 px-4 rounded-xl border border-slate-700 transition text-xs">
+                    🔄 Reiniciar Plantão
+                </button>
+            </div>
+        </div>
+
+        <!-- Center & Right Columns: RPG Situations & Ward -->
+        <div class="md:col-span-2 bg-slate-900/90 border border-green-500/30 rounded-2xl p-5 flex flex-col justify-between shadow-xl relative overflow-hidden">
+            
+            <!-- Floating Radiation background -->
+            <div class="absolute inset-0 opacity-10 pointer-events-none flex items-center justify-center">
+                <span class="text-9xl font-creepster text-green-500">☢</span>
+            </div>
+
+            <div>
+                <div class="flex justify-between items-center mb-4 border-b border-green-500/20 pb-2">
+                    <h2 id="story-title" class="font-pixel text-2xl text-green-400">--- SITUAÇÃO 1: O MISTÉRIO DO METAL ---</h2>
+                    <span id="stage-badge" class="bg-green-900/60 text-green-300 border border-green-500/40 text-xs px-2.5 py-1 rounded-full font-pixel">Fase 1 / 3</span>
+                </div>
+
+                <!-- Story Text Box -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-green-500/30 mb-4 text-slate-200 text-sm sm:text-base leading-relaxed" id="story-text">
+                    O primeiro paciente do dia diz que tirou TODO o metal do corpo para o Raio-X de Tórax. Na hora do disparo, você olha pelo vidro e nota um brilho: ele está usando uma corrente de moto de ouro legítimo por baixo da camisa. O que você faz?
+                </div>
+
+                <!-- Choices Container -->
+                <div id="choices-container" class="space-y-3 mb-4">
+                    <button onclick="makeChoice(1)" class="w-full text-left bg-slate-800/80 hover:bg-slate-700 border border-slate-700 hover:border-green-500 p-3 rounded-xl transition text-sm text-slate-200">
+                        <b>[1]</b> Cancela o disparo, pede desculpas e perde 10 minutos tirando a corrente.
+                    </button>
+                    <button onclick="makeChoice(2)" class="w-full text-left bg-slate-800/80 hover:bg-slate-700 border border-slate-700 hover:border-green-500 p-3 rounded-xl transition text-sm text-slate-200">
+                        <b>[2]</b> Solta o rojão e faz o disparo! Depois resolve no Photoshop do hospital.
+                    </button>
+                </div>
+
+                <!-- Console / Terminal Feedback -->
+                <div class="bg-black/80 border border-green-500/40 rounded-xl p-3 font-pixel text-green-400 text-sm h-24 overflow-y-auto mb-2 shadow-inner" id="terminal-log">
+                    <p>> [SISTEMA] Plantão iniciado. Tome cuidado com a radiação espalhada...</p>
+                </div>
+            </div>
+
+            <!-- Action footer info -->
+            <div class="text-xs text-slate-400 flex items-center justify-between border-t border-slate-800 pt-3">
+                <span>💡 Escolha sabiamente para manter sua paciência e energia!</span>
+                <span id="score-display" class="font-pixel text-green-400 text-base">Status: Em Operação</span>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Game Over Modal -->
+    <div id="game-over-modal" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border-2 border-red-500 rounded-2xl max-w-md w-full p-6 text-center shadow-2xl glow-box">
+            <h2 id="game-over-title" class="font-creepster text-4xl text-red-500 mb-2">GAME OVER</h2>
+            <p id="game-over-msg" class="text-slate-300 text-sm mb-6 leading-relaxed">Sua mutação chegou a 100%...</p>
+            <button onclick="resetGame()" class="bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg border border-red-400 transition w-full">
+                Tentar Outro Plantão
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center text-xs text-slate-500 pb-2">
+        Radiologia Caótica © 2026 — O Último Estagiário
+    </footer>
+
+    <!-- Game Logic Script -->
+    <script>
+        // State variables
+        let state = {
+            energy: 100,
+            patience: 50,
+            mutation: 0,
+            currentStage: 1
+        };
+
+        const stages = [
+            {
+                id: 1,
+                title: "--- SITUAÇÃO 1: O MISTÉRIO DO METAL ---",
+                text: "O primeiro paciente do dia diz que tirou TODO o metal do corpo para o Raio-X de Tórax. Na hora do disparo, você olha pelo vidro e nota um brilho: ele está usando uma corrente de moto de ouro legítimo por baixo da camisa. O que você faz?",
+                options: [
+                    "[1] Cancela o disparo, pede desculpas educadamente e perde 10 minutos fazendo o paciente tirar a corrente.",
+                    "[2] Solta o rojão e faz o disparo! Afinal, depois você resolve clonando o pulmão no Photoshop do hospital.",
+                    "[3] Convence o paciente de que a corrente de ouro vai dar um filtro 'cyberpunk' maneiro na chapa.",
+                    "[4] Culpa o técnico da manhã anterior e diz que o tubo de raios-X está com defeito fantasma."
+                ]
+            },
+            {
+                id: 2,
+                title: "--- SITUAÇÃO 2: O EXAME DO SEU JOVENIL ---",
+                text: "Chega um idoso muito simpático para uma Tomografia computadorizada. Na hora de configurar o painel, você se distrai com o celular e coloca o mAs (miliamperagem-segundo) no modo 'Derreter Chassi'. O que você faz?",
+                options: [
+                    "[1] Dispara assim mesmo rezando para todos os santos da física médica.",
+                    "[2] Finge que o sistema travou, chuta a tomada sem querer e culpa a equipe de TI.",
+                    "[3] Grita que o paciente virou um reator nuclear portátil e sai correndo da sala.",
+                    "[4] Reduz o mAs correndo, mas inventa pro paciente que ele recebeu superpoderes de cortesia."
+                ]
+            },
+            {
+                id: 3,
+                title: "--- SITUAÇÃO 3: HORA DA FLUOROSCOPIA ---",
+                text: "Você é chamado para o centro cirúrgico para operar o Arco em C. O cirurgião estressado grita: 'DÁ O TIRO, ESTAGIÁRIO!'. Você repara que está todo mundo sem o avental de chumbo (inclusive você) e o cirurgião quer fluoroscopia contínua para achar uma gaze sumida. O que você faz?",
+                options: [
+                    "[1] Recusa educadamente, exige aventais de chumbo para todos e restringe o feixe ao mínimo.",
+                    "[2] Segura o pedal de fluoroscopia com o pé e fecha os olhos bem forte para a radiação não te ver.",
+                    "[3] Sugere ao cirurgião procurar a gaze com a lanterna do celular para economizar radiação espalhada.",
+                    "[4] Ativa o modo contínuo por 10 minutos e aproveita para esquentar seu sanduíche de presunto no feixe primário."
+                ]
+            },
+            {
+                id: 4,
+                title: "--- SITUAÇÃO 4: O ARTEFATO FANTASMAGÓRICO ---",
+                text: "No plantão noturno, o laudo do ultrassom e do raio-x apontam um artefato em forma de vulto borrado em todas as imagens do aparelho antigo da sala 3. O plantão está lotado. O que você faz?",
+                options: [
+                    "[1] Chama o físico médico de plantão para testar o feixe de calibração e blindagem.",
+                    "[2] Espalha sal grosso na mesa do tomógrafo e acende uma vela aromática para espantar o fantasma do artefato.",
+                    "[3] Diz para o paciente que o vulto é a alma dele saindo para tirar um cochilo durante o exame.",
+                    "[4] Desliga o disjuntor principal, tranca a porta da sala e finge que a sala 3 foi desativada pelo Ministério da Saúde."
+                ]
+            }
+        ];
+
+        function logToTerminal(msg) {
+            const term = document.getElementById('terminal-log');
+            term.innerHTML += `<p>> ${msg}</p>`;
+            term.scrollTop = term.scrollHeight;
+        }
+
+        function updateUI() {
+            // Garantir limites das variáveis (0 a 100)
+            state.energy = Math.max(0, Math.min(100, state.energy));
+            state.patience = Math.max(0, Math.min(100, state.patience));
+            state.mutation = Math.max(0, Math.min(100, state.mutation));
+
+            // Atualizar barras e textos
+            document.getElementById('stat-energy').innerText = state.energy + '%';
+            document.getElementById('bar-energy').style.width = state.energy + '%';
+
+            document.getElementById('stat-patience').innerText = state.patience + '%';
+            document.getElementById('bar-patience').style.width = state.patience + '%';
+
+            document.getElementById('stat-mutation').innerText = state.mutation + '%';
+            document.getElementById('bar-mutation').style.width = state.mutation + '%';
+
+            // Atualizar cor da mutação
+            const mutBar = document.getElementById('bar-mutation');
+            if (state.mutation < 30) {
+                mutBar.className = "bg-green-500 h-full transition-all duration-300";
+            } else if (state.mutation < 70) {
+                mutBar.className = "bg-yellow-500 h-full transition-all duration-300";
+            } else {
+                mutBar.className = "bg-red-500 h-full transition-all duration-300 animate-pulse";
+            }
+
+            // Renderizar Avatar / Boneco SVG dinâmico conforme a mutação
+            renderAvatar();
+
+            // Verificar Condições de Game Over
+            checkGameOver();
+        }
+
+        function renderAvatar() {
+            const container = document.getElementById('avatar-container');
+            const statusText = document.getElementById('avatar-status-text');
+            let svgContent = '';
+            let statusDesc = '';
+
+            if (state.mutation < 25) {
+                // Estagiário Normal
+                statusDesc = "Estagiário Saudável (Crachá Ativo)";
+                svgContent = `
+                    <svg viewBox="0 0 100 120" class="w-24 h-28 drop-shadow-md">
+                        <!-- Cabeça -->
+                        <circle cx="50" cy="25" r="14" fill="#fde047" stroke="#ca8a04" stroke-width="2"/>
+                        <!-- Rosto óculos/olhos -->
+                        <circle cx="45" cy="23" r="2" fill="#1e293b"/>
+                        <circle cx="55" cy="23" r="2" fill="#1e293b"/>
+                        <path d="M 46 30 Q 50 33 54 30" stroke="#1e293b" stroke-width="1.5" fill="none"/>
+                        <!-- Jaleco Branco -->
+                        <path d="M 32 42 L 68 42 L 74 95 L 26 95 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+                        <!-- Gravata do estagiário -->
+                        <polygon points="50,42 47,55 53,55" fill="#2563eb"/>
+                        <!-- Braços -->
+                        <line x1="32" y1="50" x2="18" y2="75" stroke="#fde047" stroke-width="6" stroke-linecap="round"/>
+                        <line x1="68" y1="50" x2="82" y2="75" stroke="#fde047" stroke-width="6" stroke-linecap="round"/>
+                    </svg>
+                `;
+            } else if (state.mutation < 60) {
+                // Começando a brilhar / Zumbi leve
+                statusDesc = "Mutação Inicial (Brilho Verde Leve)";
+                svgContent = `
+                    <svg viewBox="0 0 100 120" class="w-24 h-28 drop-shadow-lg animate-pulse">
+                        <defs>
+                            <filter id="glow1" x="-20%" y="-20%" width="140%" height="140%">
+                                <feGaussianBlur stdDeviation="3" result="glow" />
+                                <feComposite in="SourceGraphic" in2="glow" operator="over" />
+                            </filter>
+                        </defs>
+                        <!-- Cabeça verde -->
+                        <circle cx="50" cy="25" r="14" fill="#4ade80" stroke="#16a34a" stroke-width="2" filter="url(#glow1)"/>
+                        <circle cx="45" cy="23" r="2.5" fill="#dc2626"/>
+                        <circle cx="55" cy="23" r="2.5" fill="#dc2626"/>
+                        <path d="M 45 31 Q 50 28 55 31" stroke="#16a34a" stroke-width="1.5" fill="none"/>
+                        <!-- Jaleco rasgado/sujo de revelador -->
+                        <path d="M 32 42 L 68 42 L 76 95 L 24 95 Z" fill="#e2e8f0" stroke="#4ade80" stroke-width="2"/>
+                        <path d="M 40 60 Q 50 70 60 60" fill="#16a34a" opacity="0.6"/>
+                        <!-- Braços verdes -->
+                        <line x1="32" y1="50" x2="16" y2="72" stroke="#4ade80" stroke-width="6" stroke-linecap="round"/>
+                        <line x1="68" y1="50" x2="84" y2="72" stroke="#4ade80" stroke-width="6" stroke-linecap="round"/>
+                    </svg>
+                `;
+            } else if (state.mutation < 90) {
+                // Mutação Avançada / Meio Zumbi
+                statusDesc = "Mutação Avançada (Zumbi Radiológico)";
+                svgContent = `
+                    <svg viewBox="0 0 100 120" class="w-24 h-28 drop-shadow-2xl">
+                        <defs>
+                            <filter id="glow2" x="-30%" y="-30%" width="160%" height="160%">
+                                <feGaussianBlur stdDeviation="5" result="glow" />
+                                <feComposite in="SourceGraphic" in2="glow" operator="over" />
+                            </filter>
+                        </defs>
+                        <!-- Cabeça zumbi verde forte -->
+                        <circle cx="50" cy="25" r="14" fill="#22c55e" stroke="#15803d" stroke-width="2" filter="url(#glow2)"/>
+                        <circle cx="44" cy="23" r="3" fill="#facc15"/>
+                        <circle cx="56" cy="23" r="3" fill="#facc15"/>
+                        <path d="M 43 32 L 57 32" stroke="#15803d" stroke-width="2"/>
+                        <!-- Jaleco destruído -->
+                        <path d="M 30 42 L 70 42 L 78 98 L 22 98 Z" fill="#cbd5e1" stroke="#22c55e" stroke-width="2"/>
+                        <!-- Manchas radioativas -->
+                        <circle cx="50" cy="65" r="8" fill="#16a34a" opacity="0.8"/>
+                        <!-- Braços deformados -->
+                        <line x1="30" y1="50" x2="12" y2="70" stroke="#22c55e" stroke-width="7" stroke-linecap="round"/>
+                        <line x1="70" y1="50" x2="88" y2="70" stroke="#22c55e" stroke-width="7" stroke-linecap="round"/>
+                    </svg>
+                `;
+            } else {
+                // 100% Mutação - Chernobyl Total
+                statusDesc = "FINAL CHERNOBYL! (Brilha no Escuro)";
+                svgContent = `
+                    <svg viewBox="0 0 100 120" class="w-24 h-28 animate-bounce">
+                        <defs>
+                            <filter id="glow3" x="-50%" y="-50%" width="200%" height="200%">
+                                <feGaussianBlur stdDeviation="8" result="glow" />
+                                <feComposite in="SourceGraphic" in2="glow" operator="over" />
+                            </filter>
+                        </defs>
+                        <!-- Cabeça ogiva radioativa -->
+                        <circle cx="50" cy="24" r="15" fill="#86efac" stroke="#22c55e" stroke-width="3" filter="url(#glow3)"/>
+                        <circle cx="43" cy="22" r="3.5" fill="#000000"/>
+                        <circle cx="57" cy="22" r="3.5" fill="#000000"/>
+                        <path d="M 43 33 Q 50 25 57 33" stroke="#000000" stroke-width="2" fill="none"/>
+                        <!-- Corpo brilhante verde neônio -->
+                        <path d="M 28 42 L 72 42 L 82 100 L 18 100 Z" fill="#4ade80" stroke="#86efac" stroke-width="3" filter="url(#glow3)"/>
+                        <text x="35" y="75" font-size="20" fill="#000000" font-weight="bold">☢</text>
+                        <!-- Tentáculos / Braços radioativos -->
+                        <path d="M 28 50 Q 10 60 15 80" stroke="#86efac" stroke-width="6" fill="none" stroke-linecap="round"/>
+                        <path d="M 72 50 Q 90 60 85 80" stroke="#86efac" stroke-width="6" fill="none" stroke-linecap="round"/>
+                    </svg>
+                `;
+            }
+
+            container.innerHTML = svgContent;
+            statusText.innerText = statusDesc;
+        }
+
+        function makeChoice(choiceNum) {
+            let currentS = stages[state.currentStage - 1];
+
+            if (state.currentStage === 1) {
+                if (choiceNum === 1) {
+                    state.patience += 15;
+                    state.energy -= 20;
+                    logToTerminal("Situação 1 [1]: Você fez o certo! O professor dá um aceno leve com a cabeça.");
+                } else if (choiceNum === 2) {
+                    state.patience -= 25;
+                    state.mutation += 15;
+                    logToTerminal("Situação 1 [2]: ERRO GRAVE! A imagem parece raio-x de Ciborgue. O professor te deu um sermão!");
+                } else if (choiceNum === 3) {
+                    state.patience -= 30;
+                    state.mutation += 20;
+                    logToTerminal("Situação 1 [3]: O professor quase engasgou com o café ao ouvir sua justificativa estética.");
+                } else {
+                    state.patience -= 15;
+                    logToTerminal("Situação 1 [4]: O TI apareceu na hora, checou os logs e descobriu sua mentira descarada.");
+                }
+            } else if (state.currentStage === 2) {
+                if (choiceNum === 1) {
+                    state.patience -= 20;
+                    state.energy -= 20;
+                    state.mutation += 20;
+                    logToTerminal("Situação 2 [1]: Imagem queimada como buraco negro! Cascudo pedagógico recebido.");
+                } else if (choiceNum === 2) {
+                    state.patience += 15;
+                    state.energy -= 10;
+                    logToTerminal("Situação 2 [2]: Genial! O professor acreditou que o computador travou.");
+                } else if (choiceNum === 3) {
+                    state.patience -= 35;
+                    state.mutation += 25;
+                    logToTerminal("Situação 3 [3]: Pânico geral na tomografia. O paciente achou que ia virar o Incrível Hulk.");
+                } else {
+                    state.patience += 5;
+                    state.mutation += 10;
+                    logToTerminal("Situação 2 [4]: O idoso achou a piada engraçada, mas o professor anotou seu nome na prancheta preta.");
+                }
+            } else if (state.currentStage === 3) {
+                if (choiceNum === 1) {
+                    state.patience += 20;
+                    state.energy -= 10;
+                    logToTerminal("Situação 3 [1]: Perfeito! Proteção radiológica exemplar. O chefe elogiou sua postura!");
+                } else if (choiceNum === 2) {
+                    state.patience -= 40;
+                    state.mutation += 45;
+                    state.energy -= 25;
+                    logToTerminal("Situação 3 [2]: DESASTRE TOTAL! Radiação espalhada extrema. Você agora brilha no escuro.");
+                } else if (choiceNum === 3) {
+                    state.patience -= 20;
+                    logToTerminal("Situação 3 [3]: O cirurgião jogou uma pinça em você por falta de seriedade.");
+                } else {
+                    state.patience -= 30;
+                    state.mutation += 35;
+                    logToTerminal("Situação 3 [4]: Seu sanduíche radioativo ficou pronto, mas sua medula óssea mandou lembranças.");
+                }
+            } else if (state.currentStage === 4) {
+                if (choiceNum === 1) {
+                    state.patience += 25;
+                    state.energy -= 15;
+                    logToTerminal("Situação 4 [1]: Calibração perfeita! O físico médico elogiou seu rigor técnico.");
+                } else if (choiceNum === 2) {
+                    state.patience -= 30;
+                    state.mutation += 10;
+                    logToTerminal("Situação 4 [2]: O cheiro de incenso misturado com bário estragou o clima do hospital.");
+                } else if (choiceNum === 3) {
+                    state.patience -= 15;
+                    logToTerminal("Situação 4 [3]: O paciente entrou em pânico espiritual na sala de exames.");
+                } else {
+                    state.patience -= 25;
+                    state.energy -= 10;
+                    logToTerminal("Situação 4 [4]: A gerência descobriu o disjuntor desligado e cortou seu vale-refeição.");
+                }
+            }
+
+            updateUI();
+
+            // Avançar para próxima etapa ou finalizar
+            if (state.currentStage < stages.length && state.patience > 0 && state.energy > 0 && state.mutation < 100) {
+                state.currentStage++;
+                let nextS = stages[state.currentStage - 1];
+                document.getElementById('story-title').innerText = nextS.title;
+                document.getElementById('story-text').innerText = nextS.text;
+                document.getElementById('stage-badge').innerText = `Fase ${state.currentStage} / ${stages.length}`;
+                
+                const choicesDiv = document.getElementById('choices-container');
+                choicesDiv.innerHTML = `
+                    <button onclick="makeChoice(1)" class="w-full text-left bg-slate-800/80 hover:bg-slate-700 border border-slate-700 hover:border-green-500 p-2.5 rounded-xl transition text-xs sm:text-sm text-slate-200">${nextS.options[0]}</button>
+                    <button onclick="makeChoice(2)" class="w-full text-left bg-slate-800/80 hover:bg-slate-700 border border-slate-700 hover:border-green-500 p-2.5 rounded-xl transition text-xs sm:text-sm text-slate-200">${nextS.options[1]}</button>
+                    <button onclick="makeChoice(3)" class="w-full text-left bg-slate-800/80 hover:bg-slate-700 border border-slate-700 hover:border-green-500 p-2.5 rounded-xl transition text-xs sm:text-sm text-slate-200">${nextS.options[2]}</button>
+                    <button onclick="makeChoice(4)" class="w-full text-left bg-slate-800/80 hover:bg-slate-700 border border-slate-700 hover:border-green-500 p-2.5 rounded-xl transition text-xs sm:text-sm text-slate-200">${nextS.options[3]}</button>
+                `;
+            } else if (state.patience > 0 && state.energy > 0 && state.mutation < 100) {
+                // Vitória no estágio!
+                document.getElementById('story-title').innerText = "🎉 FIM DE PLANTÃO: APROVADO!";
+                document.getElementById('story-text').innerText = "Parabéns! Você sobreviveu ao plantão de radiologia caótica com o professor exigente sem virar pó nem zumbi radioativo!";
+                document.getElementById('choices-container').innerHTML = `<p class="text-center text-green-400 font-pixel text-lg">Crachá de Estagiário Renovado com Sucesso!</p>`;
+                logToTerminal(">> [SUCESSO] Estágio concluído com aproveitamento!");
+            }
+        }
+
+        function triggerOverdose() {
+            state.mutation += 25;
+            state.energy -= 15;
+            logToTerminal("⚡ mAs manual disparado à força! Mutação subiu bruscamente.");
+            updateUI();
+        }
+
+        function applyLeadApron() {
+            state.patience += 5;
+            state.mutation = Math.max(0, state.mutation - 10);
+            logToTerminal("🛡️ Você vestiu avental de chumbo extra. Mutação local reduzida.");
+            updateUI();
+        }
+
+        function checkGameOver() {
+            let title = '';
+            let msg = '';
+            let isOver = false;
+
+            if (state.patience <= 0) {
+                isOver = true;
+                title = '❌ EXPULSO DO ESTÁGIO!';
+                msg = 'A paciência do professor zerou. Ele confiscou seu crachá e disse que seu único contato com a física da radiação agora será esquentando salgado no micro-ondas da lanchonete.';
+            } else if (state.energy <= 0) {
+                isOver = true;
+                title = '❌ DESMAIO PEDAGÓGICO!';
+                msg = 'Sua energia zerou. Você desmaiou de sono e fome em cima do chassi de Raio-X. O paciente achou que era parte do exame e deitou em cima de você.';
+            } else if (state.mutation >= 100) {
+                isOver = true;
+                title = '☢️ FINAL CHERNOBYL!';
+                msg = 'Sua mutação chegou a 100%. Você tomou tanta radiação espalhada que agora brilha no escuro. A boa notícia é que você vai economizar na conta de luz da sua casa.';
+            }
+
+            if (isOver) {
+                document.getElementById('game-over-title').innerText = title;
+                document.getElementById('game-over-msg').innerText = msg;
+                document.getElementById('game-over-modal').classList.remove('hidden');
+            }
+        }
+
+        function resetGame() {
+            state = {
+                energy: 100,
+                patience: 50,
+                mutation: 0,
+                currentStage: 1
+            };
+            document.getElementById('game-over-modal').classList.add('hidden');
+            let firstS = stages[0];
+            document.getElementById('story-title').innerText = firstS.title;
+            document.getElementById('story-text').innerText = firstS.text;
+            document.getElementById('stage-badge').innerText = `Fase 1 / ${stages.length}`;
+            document.getElementById('choices-container').innerHTML = `
+                <button onclick="makeChoice(1)" class="w-full text-left bg-slate-800/80 hover:bg-slate-700 border border-slate-700 hover:border-green-500 p-2.5 rounded-xl transition text-xs sm:text-sm text-slate-200">${firstS.options[0]}</button>
+                <button onclick="makeChoice(2)" class="w-full text-left bg-slate-800/80 hover:bg-slate-700 border border-slate-700 hover:border-green-500 p-2.5 rounded-xl transition text-xs sm:text-sm text-slate-200">${firstS.options[1]}</button>
+                <button onclick="makeChoice(3)" class="w-full text-left bg-slate-800/80 hover:bg-slate-700 border border-slate-700 hover:border-green-500 p-2.5 rounded-xl transition text-xs sm:text-sm text-slate-200">${firstS.options[2]}</button>
+                <button onclick="makeChoice(4)" class="w-full text-left bg-slate-800/80 hover:bg-slate-700 border border-slate-700 hover:border-green-500 p-2.5 rounded-xl transition text-xs sm:text-sm text-slate-200">${firstS.options[3]}</button>
+            `;
+            document.getElementById('terminal-log').innerHTML = '<p>> [SISTEMA] Plantão reiniciado. Boa sorte, estagiário!</p>';
+            updateUI();
+        }
+
+        window.onload = function() {
+            let firstS = stages[0];
+            document.getElementById('choices-container').innerHTML = `
+                <button onclick="makeChoice(1)" class="w-full text-left bg-slate-800/80 hover:bg-slate-700 border border-slate-700 hover:border-green-500 p-2.5 rounded-xl transition text-xs sm:text-sm text-slate-200">${firstS.options[0]}</button>
+                <button onclick="makeChoice(2)" class="w-full text-left bg-slate-800/80 hover:bg-slate-700 border border-slate-700 hover:border-green-500 p-2.5 rounded-xl transition text-xs sm:text-sm text-slate-200">${firstS.options[1]}</button>
+                <button onclick="makeChoice(3)" class="w-full text-left bg-slate-800/80 hover:bg-slate-700 border border-slate-700 hover:border-green-500 p-2.5 rounded-xl transition text-xs sm:text-sm text-slate-200">${firstS.options[2]}</button>
+                <button onclick="makeChoice(4)" class="w-full text-left bg-slate-800/80 hover:bg-slate-700 border border-slate-700 hover:border-green-500 p-2.5 rounded-xl transition text-xs sm:text-sm text-slate-200">${firstS.options[3]}</button>
+            `;
+            updateUI();
+        };
+    </script>
+</body>
+</html>
